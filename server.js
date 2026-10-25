@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
-const { PORT, BASE_URL } = require('./src/config/env');
+const { PORT, BASE_URL, ADMIN_EMAIL } = require('./src/config/env');
+const db = require('./src/database/connection');
 const { initSchema } = require('./src/database/schema');
 const { authenticateUser } = require('./src/middleware/auth');
 const asyncHandler = require('./src/middleware/async-handler');
@@ -9,8 +10,10 @@ const invoice = require('./src/controllers/invoice.controller');
 const apiRoutes = require('./src/routes/api.routes');
 const adminRoutes = require('./src/routes/admin.routes');
 
-// 1. Initialize SQLite Database Tables & Seeds
-initSchema();
+// 1. Initialize Database Schema & Seeds (async safe)
+initSchema().catch((err) => {
+  console.warn('Database initialization warning:', err.message);
+});
 
 // 2. Initialize Express App
 const app = express();
@@ -28,43 +31,77 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// 3. Global Auth Middleware (populates req.user from token)
+// 3. Health & Diagnostics Route (Accessible without auth or db crash)
+app.get('/api/health', async (req, res) => {
+  let dbStatus = 'disconnected';
+  let dbError = null;
+  let userCount = 0;
+  let productCount = 0;
+
+  try {
+    await initSchema();
+    const u = await db.get('SELECT COUNT(*) as c FROM users');
+    const p = await db.get('SELECT COUNT(*) as c FROM products');
+    dbStatus = db.isPostgres ? 'postgresql_connected' : 'sqlite_connected';
+    userCount = +(u?.c || u?.count || 0);
+    productCount = +(p?.c || p?.count || 0);
+  } catch (err) {
+    dbError = err.message;
+  }
+
+  res.json({
+    status: dbError ? 'warning' : 'ok',
+    mode: db.isPostgres ? 'postgresql' : (db.isVercel ? 'vercel_no_db' : 'sqlite'),
+    isVercel: Boolean(process.env.VERCEL),
+    dbStatus,
+    dbError,
+    records: {
+      users: userCount,
+      products: productCount,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// 4. Global Auth Middleware (populates req.user from token)
 app.use(authenticateUser);
 
-// 4. API Endpoints
+// 5. API Endpoints
 app.use('/api', apiRoutes);
 app.use('/api/admin', adminRoutes);
 
-// 5. Payment Gateway Callbacks (SSLCOMMERZ & aamarPay)
+// 6. Payment Gateway Callbacks (SSLCOMMERZ & aamarPay)
 app.all('/pay/:gw/:res', asyncHandler(store.handlePaymentCallback));
 
-// 6. Printable Order Invoice
-app.get('/invoice/:id', invoice.renderInvoice);
+// 7. Printable Order Invoice
+app.get('/invoice/:id', asyncHandler(invoice.renderInvoice));
 
-// 7. SEO Sitemap & Robots
-app.get('/sitemap.xml', store.getSitemap);
+// 8. SEO Sitemap & Robots
+app.get('/sitemap.xml', asyncHandler(store.getSitemap));
 app.get('/robots.txt', store.getRobots);
 
-// 8. Static Web Assets
+// 9. Static Web Assets
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1h',
   extensions: ['html'],
 }));
 
-// 9. Centralized Error Handler (prevents stack leaks & HTML error pages)
+// 10. Centralized Error Handler (prevents stack leaks & HTML error pages)
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   const status = err.status || err.statusCode || 400;
   res.status(status).json({ error: err.message || 'An unexpected error occurred' });
 });
 
-// 10. Start Server
-app.listen(PORT, () => {
-  console.log(`\n======================================================`);
-  console.log(`🛍️  Shop Storefront: ${BASE_URL}`);
-  console.log(`⚙️  Admin Dashboard: ${BASE_URL}/admin.html`);
-  console.log(`🔑 Default Admin:    admin@shop.com / admin123`);
-  console.log(`======================================================\n`);
-});
+// 11. Start Server (Standalone Local Mode Only)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n======================================================`);
+    console.log(`🛍️  Shop Storefront: ${BASE_URL}`);
+    console.log(`⚙️  Admin Dashboard: ${BASE_URL}/admin.html`);
+    console.log(`🔒 Admin Account:   ${ADMIN_EMAIL}`);
+    console.log(`======================================================\n`);
+  });
+}
 
 module.exports = app;

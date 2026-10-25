@@ -26,12 +26,35 @@ try {
 }
 
 const env = process.env;
+const isVercel = Boolean(env.VERCEL || env.AWS_LAMBDA_FUNCTION_NAME);
+const isProduction = env.NODE_ENV === 'production' || isVercel;
+
+// Insecure placeholder secrets that must never be used in production
+const INSECURE_SECRETS = new Set([
+  'dev-secret-change-me',
+  'change-this-long-random-string',
+  'replace_with_a_secure_random_64_character_hex_secret',
+  '',
+]);
+
+let secret = env.SECRET || 'dev-secret-change-me';
+if (INSECURE_SECRETS.has(secret)) {
+  if (isProduction) {
+    console.error('⚠️ [SECURITY CRITICAL] SECRET environment variable is unset or uses an insecure default. Please configure a 64-character random hex secret in your production environment variables.');
+  }
+}
 
 module.exports = {
+  IS_PRODUCTION: isProduction,
   PORT: parseInt(env.PORT || '3000', 10),
   BASE_URL: env.BASE_URL || `http://localhost:${env.PORT || 3000}`,
-  SECRET: env.SECRET || 'dev-secret-change-me',
+  SECRET: secret,
   DB_FILE: env.DB || 'shop.db',
+  DATABASE_URL: env.DATABASE_URL || env.POSTGRES_URL || env.POSTGRES_PRISMA_URL || '',
+
+  // Admin Bootstrap & Rotation
+  ADMIN_EMAIL: (env.ADMIN_EMAIL || 'admin@shop.com').toLowerCase().trim(),
+  ADMIN_PASSWORD: env.ADMIN_PASSWORD || '',
 
   // Payment Gateways
   SSL_LIVE: env.SSL_LIVE === '1' || env.SSL_LIVE === 'true',

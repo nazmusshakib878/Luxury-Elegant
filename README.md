@@ -99,8 +99,8 @@ shop/
 4. **Access the application:**
    - **Public Storefront:** [http://localhost:3000](http://localhost:3000)
    - **Admin Control Panel:** [http://localhost:3000/admin.html](http://localhost:3000/admin.html)
-     - **Email:** `admin@shop.com`
-     - **Password:** `admin123`
+     - Set your admin credentials securely in `.env` via `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
+     - Or reset/create admin password anytime with: `npm run reset-admin`
 
 ---
 

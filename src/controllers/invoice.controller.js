@@ -1,8 +1,8 @@
 const db = require('../database/connection');
 const { getStoreSettings } = require('./store.controller');
 
-exports.renderInvoice = (req, res) => {
-  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+exports.renderInvoice = async (req, res) => {
+  const order = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
 
   if (!order) {
     return res.status(404).send('Order not found');
@@ -16,7 +16,7 @@ exports.renderInvoice = (req, res) => {
     return res.status(403).send('Forbidden: You do not have permission to view this invoice');
   }
 
-  const settings = getStoreSettings();
+  const settings = await getStoreSettings();
   let items = [];
   try {
     items = JSON.parse(order.items || '[]');

@@ -1,134 +1,290 @@
+const path = require('path');
+const fs = require('fs');
 const db = require('./connection');
 const { DEFAULT_SETTINGS } = require('../config/constants');
 const { hashPassword } = require('../utils/security');
 
-function initSchema() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY,
-      name TEXT,
-      email TEXT UNIQUE,
-      phone TEXT,
-      pass TEXT,
-      role TEXT DEFAULT 'customer',
-      created TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+let schemaInitPromise = null;
 
-    CREATE TABLE IF NOT EXISTS categories (
-      id INTEGER PRIMARY KEY,
-      name TEXT UNIQUE
-    );
+async function initSchema() {
+  if (schemaInitPromise) return schemaInitPromise;
 
-    CREATE TABLE IF NOT EXISTS products (
-      id INTEGER PRIMARY KEY,
-      name TEXT,
-      cat_id INTEGER,
-      price REAL,
-      sale_price REAL,
-      stock INTEGER DEFAULT 0,
-      image TEXT,
-      description TEXT,
-      variants TEXT DEFAULT '{}',
-      flash_end TEXT,
-      active INTEGER DEFAULT 1
-    );
+  schemaInitPromise = (async () => {
+    try {
+      if (db.isPostgres) {
+        // 1. PostgreSQL Schema
+        await db.exec(`
+          CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            email TEXT UNIQUE,
+            phone TEXT,
+            pass TEXT,
+            role TEXT DEFAULT 'customer',
+            created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
 
-    CREATE TABLE IF NOT EXISTS orders (
-      id INTEGER PRIMARY KEY,
-      user_id INTEGER,
-      name TEXT,
-      phone TEXT,
-      address TEXT,
-      area TEXT,
-      items TEXT,
-      subtotal REAL,
-      discount REAL,
-      shipping REAL,
-      total REAL,
-      coupon TEXT,
-      method TEXT,
-      payment_status TEXT DEFAULT 'unpaid',
-      status TEXT DEFAULT 'pending',
-      return_status TEXT,
-      return_reason TEXT,
-      created TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+          CREATE TABLE IF NOT EXISTS categories (
+            id SERIAL PRIMARY KEY,
+            name TEXT UNIQUE
+          );
 
-    CREATE TABLE IF NOT EXISTS coupons (
-      code TEXT PRIMARY KEY,
-      percent REAL,
-      active INTEGER DEFAULT 1
-    );
+          CREATE TABLE IF NOT EXISTS products (
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            cat_id INTEGER,
+            price NUMERIC,
+            sale_price NUMERIC,
+            stock INTEGER DEFAULT 0,
+            image TEXT,
+            description TEXT,
+            variants TEXT DEFAULT '{}',
+            flash_end TEXT,
+            active INTEGER DEFAULT 1
+          );
 
-    CREATE TABLE IF NOT EXISTS reviews (
-      id INTEGER PRIMARY KEY,
-      product_id INTEGER,
-      user_name TEXT,
-      rating INTEGER,
-      comment TEXT,
-      created TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+          CREATE TABLE IF NOT EXISTS orders (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER,
+            name TEXT,
+            phone TEXT,
+            address TEXT,
+            area TEXT,
+            items TEXT,
+            subtotal NUMERIC,
+            discount NUMERIC,
+            shipping NUMERIC,
+            total NUMERIC,
+            coupon TEXT,
+            method TEXT,
+            payment_status TEXT DEFAULT 'unpaid',
+            status TEXT DEFAULT 'pending',
+            return_status TEXT,
+            return_reason TEXT,
+            created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
 
-    CREATE TABLE IF NOT EXISTS abandoned (
-      phone TEXT PRIMARY KEY,
-      items TEXT,
-      updated TEXT DEFAULT CURRENT_TIMESTAMP
-    );
+          CREATE TABLE IF NOT EXISTS coupons (
+            code TEXT PRIMARY KEY,
+            percent NUMERIC,
+            active INTEGER DEFAULT 1
+          );
 
-    CREATE TABLE IF NOT EXISTS settings (
-      k TEXT PRIMARY KEY,
-      v TEXT
-    );
-  `);
+          CREATE TABLE IF NOT EXISTS reviews (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER,
+            user_name TEXT,
+            rating INTEGER,
+            comment TEXT,
+            created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
 
-  // Insert default settings if missing
-  const insertSetting = db.prepare('INSERT OR IGNORE INTO settings (k, v) VALUES (?, ?)');
-  for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
-    insertSetting.run(key, value);
-  }
+          CREATE TABLE IF NOT EXISTS abandoned (
+            phone TEXT PRIMARY KEY,
+            items TEXT,
+            updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
 
-  // Seed default Admin and sample products if no users exist
-  const hasUsers = db.prepare('SELECT 1 FROM users LIMIT 1').get();
-  if (!hasUsers) {
-    db.prepare("INSERT INTO users (name, email, pass, role) VALUES ('Admin', 'admin@shop.com', ?, 'admin')")
-      .run(hashPassword('admin123'));
+          CREATE TABLE IF NOT EXISTS settings (
+            k TEXT PRIMARY KEY,
+            v TEXT
+          );
+        `);
 
-    const insertCat = db.prepare('INSERT INTO categories (name) VALUES (?)');
-    ['Fashion', 'Electronics', 'Home & Living', 'Beauty'].forEach((cat) => insertCat.run(cat));
+        // Safe Catalog Seeding (Categories, Products, Coupons, Settings - NO customer or order data)
+        const existingCats = await db.get('SELECT COUNT(*) AS count FROM categories');
+        if (+existingCats.count === 0) {
+          console.log('📦 Seeding initial catalog data into PostgreSQL...');
+          try {
+            const seedPath = path.resolve(__dirname, 'seed-data.json');
+            if (fs.existsSync(seedPath)) {
+              const snapshot = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
 
-    const sampleProducts = [
-      ['Riviera Tailored Linen Shirt', 1, 2490, 1790, 40, '/images/prod-1.jpg', '{"sizes":["S","M","L","XL"],"colors":["White","Navy","Olive"]}', 'Meticulously crafted from 100% European flax linen. Breathable, relaxed tailoring with mother-of-pearl buttons, ideal for refined tropical elegance.'],
-      ['Milano Full-Grain Leather Weekender', 1, 6900, 0, 15, '/images/prod-2.jpg', '{"colors":["Tan","Black"]}', 'Handcrafted from vegetable-tanned full-grain cognac leather. Features antique brass hardware, reinforced luggage handles, and spacious waterproof lined interior.'],
-      ['Geneva Gold Minimalist Watch', 1, 4500, 3600, 25, '/images/prod-3.jpg', '{"colors":["Silver","Gold"]}', 'Ultra-slim surgical-grade champagne gold casing with scratch-resistant sapphire crystal and Italian top-grain calfskin leather strap. Accurate Swiss quartz movement.'],
-      ['Aura Pro Studio Wireless Headphones', 2, 8900, 6990, 30, '/images/prod-4.jpg', '{"colors":["Black","White"]}', 'Precision 40mm titanium acoustic drivers, hybrid active noise cancellation, brushed aluminum hardware, and 45-hour ultra-long battery life with spatial audio.'],
-      ['PulseTrack OLED Smart Fitness Band', 2, 3200, 0, 50, '/images/prod-5.jpg', '{}', 'Vibrant curved 1.47-inch AMOLED display with real-time biometric heart rate, SpO2 monitoring, 50m water resistance, and 14-day endurance battery.'],
-      ['Nordic Ceramic Sculptural Table Lamp', 3, 2800, 0, 20, '/images/prod-6.jpg', '{"colors":["Cream","Sage"]}', 'Hand-thrown matte textured stoneware ceramic base complemented by a natural woven linen shade. Emits warm ambient illumination for serene interiors.'],
-      ['Botanical Amber Soy Scented Candle', 3, 1450, 990, 60, '/images/prod-7.jpg', '{}', 'Poured with 100% organic soy wax and natural wooden wick in an apothecary amber glass vessel. Infused with cedarwood, vanilla amber, and bergamot essential oils.'],
-      ['Lumière 20% Vitamin C Radiance Serum', 4, 1850, 0, 45, '/images/prod-8.jpg', '{}', 'Advanced antioxidant brightening elixir formulated with 20% stabilized L-Ascorbic Acid, pure hyaluronic acid, and botanical ferulic acid for a luminous, firm complexion.'],
-    ];
+              // Seed Categories
+              for (const cat of (snapshot.categories || [])) {
+                await db.run('INSERT INTO categories (id, name) VALUES (?, ?) ON CONFLICT (id) DO NOTHING', [cat.id, cat.name]);
+              }
+              await db.exec(`SELECT setval(pg_get_serial_sequence('categories', 'id'), COALESCE(MAX(id), 1)) FROM categories;`);
 
-    const flashEnd = new Date(Date.now() + 3 * 864e5).toISOString();
-    const insertProd = db.prepare(`
-      INSERT INTO products (name, cat_id, price, sale_price, stock, image, description, variants, flash_end)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+              // Seed Products
+              for (const p of (snapshot.products || [])) {
+                await db.run('INSERT INTO products (id, name, cat_id, price, sale_price, stock, image, description, variants, flash_end, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING', [
+                  p.id, p.name, p.cat_id, p.price, p.sale_price, p.stock, p.image, p.description, p.variants, p.flash_end, p.active ?? 1
+                ]);
+              }
+              await db.exec(`SELECT setval(pg_get_serial_sequence('products', 'id'), COALESCE(MAX(id), 1)) FROM products;`);
 
-    sampleProducts.forEach(([name, catId, price, salePrice, stock, imgPath, variants, desc]) => {
-      insertProd.run(
-        name,
-        catId,
-        price,
-        salePrice || null,
-        stock,
-        imgPath,
-        desc,
-        variants,
-        salePrice ? flashEnd : null
-      );
-    });
+              // Seed Coupons
+              for (const c of (snapshot.coupons || [])) {
+                await db.run('INSERT INTO coupons (code, percent, active) VALUES (?, ?, ?) ON CONFLICT (code) DO NOTHING', [c.code, c.percent, c.active]);
+              }
 
-    db.prepare("INSERT INTO coupons (code, percent, active) VALUES ('WELCOME10', 10, 1)").run();
-  }
+              // Seed Settings
+              for (const s of (snapshot.settings || [])) {
+                await db.run('INSERT INTO settings (k, v) VALUES (?, ?) ON CONFLICT (k) DO NOTHING', [s.k, s.v]);
+              }
+
+              console.log('✅ PostgreSQL catalog seeded successfully!');
+            }
+          } catch (seedErr) {
+            console.error('Error importing catalog data:', seedErr.message);
+          }
+        }
+
+        // Bootstrap Admin User safely if missing
+        const adminCheck = await db.get("SELECT id, email FROM users WHERE role = 'admin' LIMIT 1");
+        const { ADMIN_EMAIL, ADMIN_PASSWORD, IS_PRODUCTION } = require('../config/env');
+        if (!adminCheck) {
+          if (ADMIN_PASSWORD && ADMIN_PASSWORD.trim().length >= 8) {
+            await db.run('INSERT INTO users (name, email, pass, role) VALUES (?, ?, ?, ?) ON CONFLICT (email) DO NOTHING', [
+              'Admin',
+              ADMIN_EMAIL,
+              hashPassword(ADMIN_PASSWORD.trim()),
+              'admin',
+            ]);
+            console.log(`✅ Admin account initialized for: ${ADMIN_EMAIL}`);
+          } else if (!IS_PRODUCTION) {
+            const crypto = require('crypto');
+            const devPass = crypto.randomBytes(6).toString('hex');
+            await db.run('INSERT INTO users (name, email, pass, role) VALUES (?, ?, ?, ?) ON CONFLICT (email) DO NOTHING', [
+              'Admin',
+              ADMIN_EMAIL,
+              hashPassword(devPass),
+              'admin',
+            ]);
+            console.log(`🔑 [LOCAL DEV ONLY] Temporary Admin created: ${ADMIN_EMAIL} / ${devPass}`);
+          } else {
+            console.warn(`⚠️ [ACTION REQUIRED] No admin user found in database. Set ADMIN_EMAIL and ADMIN_PASSWORD (min 8 chars) in environment variables to bootstrap admin access.`);
+          }
+        }
+      } else if (!db.isVercel && db.sqlite) {
+        // 2. SQLite Schema (local mode)
+        await db.exec(`
+          CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            email TEXT UNIQUE,
+            phone TEXT,
+            pass TEXT,
+            role TEXT DEFAULT 'customer',
+            created TEXT DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY,
+            name TEXT UNIQUE
+          );
+
+          CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            cat_id INTEGER,
+            price REAL,
+            sale_price REAL,
+            stock INTEGER DEFAULT 0,
+            image TEXT,
+            description TEXT,
+            variants TEXT DEFAULT '{}',
+            flash_end TEXT,
+            active INTEGER DEFAULT 1
+          );
+
+          CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER,
+            name TEXT,
+            phone TEXT,
+            address TEXT,
+            area TEXT,
+            items TEXT,
+            subtotal REAL,
+            discount REAL,
+            shipping REAL,
+            total REAL,
+            coupon TEXT,
+            method TEXT,
+            payment_status TEXT DEFAULT 'unpaid',
+            status TEXT DEFAULT 'pending',
+            return_status TEXT,
+            return_reason TEXT,
+            created TEXT DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS coupons (
+            code TEXT PRIMARY KEY,
+            percent REAL,
+            active INTEGER DEFAULT 1
+          );
+
+          CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY,
+            product_id INTEGER,
+            user_name TEXT,
+            rating INTEGER,
+            comment TEXT,
+            created TEXT DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS abandoned (
+            phone TEXT PRIMARY KEY,
+            items TEXT,
+            updated TEXT DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS settings (
+            k TEXT PRIMARY KEY,
+            v TEXT
+          );
+        `);
+
+        // Insert default settings if missing
+        for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
+          await db.run('INSERT OR IGNORE INTO settings (k, v) VALUES (?, ?)', [key, value]);
+        }
+
+        // Seed initial catalog if fresh SQLite database
+        const sqliteCats = await db.get('SELECT COUNT(*) AS count FROM categories');
+        if (+sqliteCats.count === 0) {
+          try {
+            const seedPath = path.resolve(__dirname, 'seed-data.json');
+            if (fs.existsSync(seedPath)) {
+              const snapshot = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+              for (const cat of (snapshot.categories || [])) {
+                await db.run('INSERT OR IGNORE INTO categories (id, name) VALUES (?, ?)', [cat.id, cat.name]);
+              }
+              for (const p of (snapshot.products || [])) {
+                await db.run('INSERT OR IGNORE INTO products (id, name, cat_id, price, sale_price, stock, image, description, variants, flash_end, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                  p.id, p.name, p.cat_id, p.price, p.sale_price, p.stock, p.image, p.description, p.variants, p.flash_end, p.active ?? 1
+                ]);
+              }
+              for (const c of (snapshot.coupons || [])) {
+                await db.run('INSERT OR IGNORE INTO coupons (code, percent, active) VALUES (?, ?, ?)', [c.code, c.percent, c.active]);
+              }
+            }
+          } catch (seedErr) {
+            console.error('Error seeding SQLite catalog:', seedErr.message);
+          }
+        }
+
+        // Bootstrap Admin in SQLite if missing
+        const sqliteAdmin = await db.get("SELECT id, email FROM users WHERE role = 'admin' LIMIT 1");
+        const { ADMIN_EMAIL, ADMIN_PASSWORD } = require('../config/env');
+        if (!sqliteAdmin && ADMIN_PASSWORD && ADMIN_PASSWORD.trim().length >= 8) {
+          await db.run('INSERT OR IGNORE INTO users (name, email, pass, role) VALUES (?, ?, ?, ?)', [
+            'Admin',
+            ADMIN_EMAIL,
+            hashPassword(ADMIN_PASSWORD.trim()),
+            'admin',
+          ]);
+          console.log(`✅ SQLite Admin account created: ${ADMIN_EMAIL}`);
+        }
+      }
+    } catch (err) {
+      console.error('Database schema initialization error:', err.message);
+    }
+  })();
+
+  return schemaInitPromise;
 }
 
 module.exports = { initSchema };

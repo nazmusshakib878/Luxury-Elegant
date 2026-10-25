@@ -1,5 +1,6 @@
 const db = require('../database/connection');
 const { BASE_URL } = require('../config/env');
+const { DEFAULT_SETTINGS } = require('../config/constants');
 const { hashPassword, verifyPassword, generateToken } = require('../utils/security');
 const { initiatePayment, verifyPayment } = require('../services/payment');
 const { notifyNewOrder } = require('../services/notification');
@@ -15,17 +16,21 @@ const PRODUCT_QUERY = `
   LEFT JOIN categories c ON c.id = p.cat_id
 `;
 
-function getStoreSettings() {
-  const rows = db.prepare('SELECT * FROM settings').all();
-  return Object.fromEntries(rows.map((row) => [row.k, row.v]));
+async function getStoreSettings() {
+  try {
+    const rows = await db.all('SELECT * FROM settings');
+    return Object.fromEntries(rows.map((row) => [row.k, row.v]));
+  } catch (err) {
+    return DEFAULT_SETTINGS;
+  }
 }
 
 function getEffectivePrice(product) {
   const hasFlashSale = !product.flash_end || new Date(product.flash_end) > new Date();
   if (product.sale_price && hasFlashSale) {
-    return product.sale_price;
+    return +product.sale_price;
   }
-  return product.price;
+  return +product.price;
 }
 
 function shapeProduct(product) {
@@ -42,16 +47,21 @@ function shapeProduct(product) {
 
   return {
     ...product,
+    price: +product.price,
+    sale_price: product.sale_price ? +product.sale_price : null,
+    stock: +product.stock,
+    rating: product.rating !== null && product.rating !== undefined ? +product.rating : null,
+    reviews: +product.reviews || 0,
     image: imgPath,
     variants: parsedVariants,
     price_now: priceNow,
-    on_sale: priceNow < product.price,
+    on_sale: priceNow < +product.price,
   };
 }
 
 // Controllers
-exports.getSettings = (req, res) => {
-  const s = getStoreSettings();
+exports.getSettings = async (req, res) => {
+  const s = await getStoreSettings();
   res.json({
     shop_name: s.shop_name,
     whatsapp: s.whatsapp,
@@ -69,12 +79,12 @@ exports.getSettings = (req, res) => {
   });
 };
 
-exports.getCategories = (req, res) => {
-  const categories = db.prepare('SELECT * FROM categories').all();
+exports.getCategories = async (req, res) => {
+  const categories = await db.all('SELECT * FROM categories ORDER BY id ASC');
   res.json(categories);
 };
 
-exports.getProducts = (req, res) => {
+exports.getProducts = async (req, res) => {
   const where = ['p.active = 1'];
   const params = [];
   const { q: search, cat, min, max, sort, sale } = req.query;
@@ -94,65 +104,79 @@ exports.getProducts = (req, res) => {
     }
   }
 
-  let rows = db.prepare(`${PRODUCT_QUERY} WHERE ${where.join(' AND ')}`).all(...params).map(shapeProduct);
+  const querySql = `${PRODUCT_QUERY} WHERE ${where.join(' AND ')}`;
+  const rows = await db.all(querySql, params);
+  let shaped = rows.map(shapeProduct);
 
-  if (min) rows = rows.filter((p) => p.price_now >= +min);
-  if (max) rows = rows.filter((p) => p.price_now <= +max);
-  if (sale) rows = rows.filter((p) => p.on_sale);
+  if (min) shaped = shaped.filter((p) => p.price_now >= +min);
+  if (max) shaped = shaped.filter((p) => p.price_now <= +max);
+  if (sale) shaped = shaped.filter((p) => p.on_sale);
 
   const sorters = {
     low: (a, b) => a.price_now - b.price_now,
     high: (a, b) => b.price_now - a.price_now,
     new: (a, b) => b.id - a.id,
   };
-  if (sorters[sort]) rows.sort(sorters[sort]);
+  if (sorters[sort]) shaped.sort(sorters[sort]);
 
-  res.json(rows);
+  res.json(shaped);
 };
 
-exports.getProductById = (req, res) => {
-  const product = db.prepare(`${PRODUCT_QUERY} WHERE p.id = ?`).get(req.params.id);
+exports.getProductById = async (req, res) => {
+  const product = await db.get(`${PRODUCT_QUERY} WHERE p.id = ?`, [req.params.id]);
   if (!product) {
     return res.status(404).json({ error: 'Product not found' });
   }
 
-  const reviewList = db.prepare('SELECT * FROM reviews WHERE product_id = ? ORDER BY id DESC').all(product.id);
+  const reviewList = await db.all('SELECT * FROM reviews WHERE product_id = ? ORDER BY id DESC', [product.id]);
   res.json({
     ...shapeProduct(product),
     reviewList,
   });
 };
 
-exports.addReview = (req, res) => {
+exports.addReview = async (req, res) => {
   const { rating, comment } = req.body;
   if (!rating || rating < 1 || rating > 5) {
     throw new Error('Rating must be between 1 and 5');
   }
 
-  db.prepare('INSERT INTO reviews (product_id, user_name, rating, comment) VALUES (?, ?, ?, ?)')
-    .run(req.params.id, req.user.name, rating, comment || '');
+  await db.run('INSERT INTO reviews (product_id, user_name, rating, comment) VALUES (?, ?, ?, ?)', [
+    req.params.id,
+    req.user.name,
+    rating,
+    comment || '',
+  ]);
 
   res.json({ ok: 1 });
 };
 
-exports.getCoupon = (req, res) => {
+exports.getCoupon = async (req, res) => {
   const code = String(req.query.code || req.query.c || '').toUpperCase();
-  const coupon = db.prepare('SELECT * FROM coupons WHERE code = ? AND active = 1').get(code);
+  const coupon = await db.get('SELECT * FROM coupons WHERE code = ? AND active = 1', [code]);
   if (!coupon) {
     return res.status(404).json({ error: 'Invalid or expired coupon' });
   }
-  res.json(coupon);
+  res.json({
+    code: coupon.code,
+    percent: +coupon.percent,
+    active: coupon.active,
+  });
 };
 
-exports.register = (req, res) => {
+exports.register = async (req, res) => {
   const { name, email, phone, password } = req.body;
   if (!name || !email || !password || password.length < 6) {
     throw new Error('Name, valid email and a 6+ character password are required');
   }
 
   try {
-    const info = db.prepare('INSERT INTO users (name, email, phone, pass) VALUES (?, ?, ?, ?)')
-      .run(name, email.toLowerCase(), phone || '', hashPassword(password));
+    const info = await db.run('INSERT INTO users (name, email, phone, pass) VALUES (?, ?, ?, ?)', [
+      name,
+      email.toLowerCase(),
+      phone || '',
+      hashPassword(password),
+    ]);
 
     const user = { id: info.lastInsertRowid, name, role: 'customer' };
     res.json({ token: generateToken(user), user });
@@ -161,9 +185,9 @@ exports.register = (req, res) => {
   }
 };
 
-exports.login = (req, res) => {
+exports.login = async (req, res) => {
   const { email, password } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(String(email || '').toLowerCase());
+  const user = await db.get('SELECT * FROM users WHERE email = ?', [String(email || '').toLowerCase()]);
 
   if (!user || !verifyPassword(password || '', user.pass)) {
     throw new Error('Wrong email or password');
@@ -182,11 +206,13 @@ exports.login = (req, res) => {
   });
 };
 
-exports.captureCart = (req, res) => {
+exports.captureCart = async (req, res) => {
   const { phone, items } = req.body;
   if (phone && items && items.length) {
-    db.prepare('INSERT OR REPLACE INTO abandoned (phone, items, updated) VALUES (?, ?, CURRENT_TIMESTAMP)')
-      .run(phone, JSON.stringify(items));
+    await db.run('INSERT INTO abandoned (phone, items, updated) VALUES (?, ?, CURRENT_TIMESTAMP)', [
+      phone,
+      JSON.stringify(items),
+    ]);
   }
   res.json({ ok: 1 });
 };
@@ -209,7 +235,7 @@ exports.createOrder = async (req, res) => {
   const lineItems = [];
 
   for (const item of items) {
-    const product = db.prepare('SELECT * FROM products WHERE id = ? AND active = 1').get(item.id);
+    const product = await db.get('SELECT * FROM products WHERE id = ? AND active = 1', [item.id]);
     const qty = Math.max(1, +item.qty || 1);
 
     if (!product || product.stock < qty) {
@@ -232,14 +258,14 @@ exports.createOrder = async (req, res) => {
   let discount = 0;
   let validCoupon = null;
   if (coupon) {
-    validCoupon = db.prepare('SELECT * FROM coupons WHERE code = ? AND active = 1').get(String(coupon).toUpperCase());
+    validCoupon = await db.get('SELECT * FROM coupons WHERE code = ? AND active = 1', [String(coupon).toUpperCase()]);
     if (validCoupon) {
       discount = Math.round((subtotal * validCoupon.percent) / 100);
     }
   }
 
   // Calculate Shipping
-  const settings = getStoreSettings();
+  const settings = await getStoreSettings();
   const freeShipThreshold = +settings.free_ship;
   const shipDhaka = +settings.ship_dhaka;
   const shipOutside = +settings.ship_outside;
@@ -249,60 +275,65 @@ exports.createOrder = async (req, res) => {
   const validMethods = ['cod', 'sslcommerz', 'aamarpay'];
   const paymentMethod = validMethods.includes(method) ? method : 'cod';
 
-  // Transaction: Create order, decrement stocks, remove from abandoned cart
-  const orderId = db.transaction(() => {
-    const result = db.prepare(`
-      INSERT INTO orders (user_id, name, phone, address, area, items, subtotal, discount, shipping, total, coupon, method)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      req.user?.id || null,
-      cleanName,
-      cleanPhone,
-      cleanAddress,
-      area || 'outside',
-      JSON.stringify(lineItems),
-      subtotal,
-      discount,
-      shipping,
-      total,
-      validCoupon?.code || null,
-      paymentMethod
-    );
+  // Create order, decrement stocks, remove from abandoned cart
+  const result = await db.run(`
+    INSERT INTO orders (user_id, name, phone, address, area, items, subtotal, discount, shipping, total, coupon, method)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    req.user?.id || null,
+    cleanName,
+    cleanPhone,
+    cleanAddress,
+    area || 'dhaka',
+    JSON.stringify(lineItems),
+    subtotal,
+    discount,
+    shipping,
+    total,
+    validCoupon ? validCoupon.code : null,
+    paymentMethod,
+  ]);
 
-    const id = result.lastInsertRowid;
-    const updateStock = db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?');
-    lineItems.forEach((line) => updateStock.run(line.qty, line.id));
-    db.prepare('DELETE FROM abandoned WHERE phone = ?').run(cleanPhone);
+  const orderId = result.lastInsertRowid;
 
-    return id;
-  })();
+  for (const item of lineItems) {
+    await db.run('UPDATE products SET stock = stock - ? WHERE id = ?', [item.qty, item.id]);
+  }
+  await db.run('DELETE FROM abandoned WHERE phone = ?', [cleanPhone]);
 
-  const createdOrder = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
-  notifyNewOrder(createdOrder);
+  const createdOrder = await db.get('SELECT * FROM orders WHERE id = ?', [orderId]);
 
-  let paymentUrl = null;
-  let payError = null;
-  if (paymentMethod !== 'cod') {
-    try {
-      paymentUrl = await initiatePayment(createdOrder, paymentMethod);
-    } catch (err) {
-      payError = err.message;
+  // Dispatch background notification
+  notifyNewOrder(createdOrder).catch(() => {});
+
+  // Handle Online Payment Initiation
+  if (paymentMethod === 'sslcommerz' || paymentMethod === 'aamarpay') {
+    const paymentUrl = await initiatePayment({
+      gateway: paymentMethod,
+      orderId,
+      amount: total,
+      customerName: cleanName,
+      customerPhone: cleanPhone,
+      customerAddress: cleanAddress,
+    });
+
+    if (paymentUrl) {
+      return res.json({ id: orderId, redirect: paymentUrl });
     }
   }
 
-  res.json({
-    id: orderId,
-    total,
-    payment_url: paymentUrl,
-    pay_error: payError,
-  });
+  res.json({ id: orderId });
 };
 
-exports.trackOrder = (req, res) => {
+exports.trackOrder = async (req, res) => {
   const { id, phone } = req.query;
-  const order = db.prepare('SELECT * FROM orders WHERE id = ? AND phone = ?').get(id, phone);
+  if (!id || !phone) {
+    throw new Error('Order ID and Phone Number are required');
+  }
+
+  const order = await db.get('SELECT * FROM orders WHERE id = ? AND phone = ?', [id, phone]);
   if (!order) {
-    return res.status(404).json({ error: 'Order not found' });
+    return res.status(404).json({ error: 'Order not found with provided credentials' });
   }
 
   res.json({
@@ -311,27 +342,28 @@ exports.trackOrder = (req, res) => {
   });
 };
 
-exports.getMyOrders = (req, res) => {
-  const orders = db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC')
-    .all(req.user.id)
-    .map((o) => ({
-      ...o,
-      items: JSON.parse(o.items || '[]'),
-    }));
-
+exports.getMyOrders = async (req, res) => {
+  const orders = (await db.all('SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC', [req.user.id])).map((o) => ({
+    ...o,
+    items: JSON.parse(o.items || '[]'),
+  }));
   res.json(orders);
 };
 
-exports.requestReturn = (req, res) => {
-  const { reason, phone } = req.body;
-  const result = db.prepare(`
+exports.requestReturn = async (req, res) => {
+  const { reason } = req.body;
+  if (!reason || !reason.trim()) {
+    throw new Error('Please provide a reason for return');
+  }
+
+  const result = await db.run(`
     UPDATE orders 
     SET return_status = 'requested', return_reason = ? 
-    WHERE id = ? AND phone = ? AND status = 'delivered'
-  `).run(reason || '', req.params.id, phone);
+    WHERE id = ? AND user_id = ? AND status = 'delivered'
+  `, [reason.trim(), req.params.id, req.user.id]);
 
-  if (!result.changes) {
-    throw new Error('Return request not eligible (must be a delivered order with matching phone)');
+  if (result.changes === 0) {
+    throw new Error('Order is not eligible for return or does not exist');
   }
 
   res.json({ ok: 1 });
@@ -339,33 +371,25 @@ exports.requestReturn = (req, res) => {
 
 exports.handlePaymentCallback = async (req, res) => {
   const { gw, res: resultType } = req.params;
-  const callbackData = { ...req.query, ...req.body };
-  const rawId = String(callbackData.tran_id || callbackData.mer_txnid || '').replace('ORD', '');
-  const orderId = parseInt(rawId, 10);
+  const payload = req.method === 'POST' ? req.body : req.query;
 
-  let isVerified = false;
-  const order = orderId ? db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) : null;
+  const isVerified = await verifyPayment(gw, payload);
+  const orderId = payload.tran_id || payload.mer_txnid;
 
-  if (order && resultType === 'success') {
-    isVerified = await verifyPayment(gw, callbackData, order);
-  }
-
-  if (isVerified) {
-    db.prepare(`
-      UPDATE orders 
-      SET payment_status = 'paid', status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END 
-      WHERE id = ?
-    `).run(orderId);
-  } else if (order && order.payment_status === 'unpaid') {
-    db.prepare('UPDATE orders SET payment_status = ? WHERE id = ?')
-      .run(resultType === 'cancel' ? 'cancelled' : 'failed', orderId);
+  if (isVerified && orderId) {
+    await db.run('UPDATE orders SET payment_status = ? WHERE id = ?', ['paid', orderId]);
+  } else if (orderId) {
+    await db.run('UPDATE orders SET payment_status = ? WHERE id = ?', [
+      resultType === 'cancel' ? 'cancelled' : 'failed',
+      orderId,
+    ]);
   }
 
   res.redirect(`/#/track/${orderId}?paid=${isVerified ? 1 : 0}`);
 };
 
-exports.getSitemap = (req, res) => {
-  const products = db.prepare('SELECT id FROM products WHERE active = 1').all();
+exports.getSitemap = async (req, res) => {
+  const products = await db.all('SELECT id FROM products WHERE active = 1');
   const urls = products.map((p) => `<url><loc>${BASE_URL}/#/p/${p.id}</loc></url>`).join('');
 
   res.type('xml').send(`<?xml version="1.0" encoding="UTF-8"?>
@@ -383,3 +407,4 @@ exports.getRobots = (req, res) => {
 exports.getStoreSettings = getStoreSettings;
 exports.PRODUCT_QUERY = PRODUCT_QUERY;
 exports.shapeProduct = shapeProduct;
+exports.getEffectivePrice = getEffectivePrice;

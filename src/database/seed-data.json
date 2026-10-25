@@ -1,0 +1,192 @@
+{
+  "categories": [
+    {
+      "id": 1,
+      "name": "Fashion"
+    },
+    {
+      "id": 2,
+      "name": "Electronics"
+    },
+    {
+      "id": 3,
+      "name": "Home & Living"
+    },
+    {
+      "id": 4,
+      "name": "Beauty"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "name": "Riviera Tailored Linen Shirt",
+      "cat_id": 1,
+      "price": 2490,
+      "sale_price": 1790,
+      "stock": 31,
+      "image": "/images/prod-1.jpg",
+      "description": "Meticulously crafted from 100% European flax linen. Breathable, relaxed tailoring with mother-of-pearl buttons, ideal for refined tropical elegance.",
+      "variants": "{\"sizes\":[\"S\",\"M\",\"L\",\"XL\"],\"colors\":[\"White\",\"Navy\",\"Olive\"]}",
+      "flash_end": "2026-10-28T18:03:26.713Z",
+      "active": 1
+    },
+    {
+      "id": 2,
+      "name": "Milano Full-Grain Leather Weekender",
+      "cat_id": 1,
+      "price": 6900,
+      "sale_price": null,
+      "stock": 15,
+      "image": "/images/prod-2.jpg",
+      "description": "Handcrafted from vegetable-tanned full-grain cognac leather. Features antique brass hardware, reinforced luggage handles, and spacious waterproof lined interior.",
+      "variants": "{\"colors\":[\"Tan\",\"Black\"]}",
+      "flash_end": null,
+      "active": 1
+    },
+    {
+      "id": 3,
+      "name": "Geneva Gold Minimalist Watch",
+      "cat_id": 1,
+      "price": 4500,
+      "sale_price": 3600,
+      "stock": 23,
+      "image": "/images/prod-3.jpg",
+      "description": "Ultra-slim surgical-grade champagne gold casing with scratch-resistant sapphire crystal and Italian top-grain calfskin leather strap. Accurate Swiss quartz movement.",
+      "variants": "{\"colors\":[\"Silver\",\"Gold\"]}",
+      "flash_end": "2026-10-28T18:03:26.713Z",
+      "active": 1
+    },
+    {
+      "id": 4,
+      "name": "Aura Pro Studio Wireless Headphones",
+      "cat_id": 2,
+      "price": 8900,
+      "sale_price": 6990,
+      "stock": 30,
+      "image": "/images/prod-4.jpg",
+      "description": "Precision 40mm titanium acoustic drivers, hybrid active noise cancellation, brushed aluminum hardware, and 45-hour ultra-long battery life with spatial audio.",
+      "variants": "{\"colors\":[\"Black\",\"White\"]}",
+      "flash_end": "2026-10-28T18:03:26.713Z",
+      "active": 1
+    },
+    {
+      "id": 5,
+      "name": "PulseTrack OLED Smart Fitness Band",
+      "cat_id": 2,
+      "price": 3200,
+      "sale_price": null,
+      "stock": 50,
+      "image": "/images/prod-5.jpg",
+      "description": "Vibrant curved 1.47-inch AMOLED display with real-time biometric heart rate, SpO2 monitoring, 50m water resistance, and 14-day endurance battery.",
+      "variants": "{}",
+      "flash_end": null,
+      "active": 1
+    },
+    {
+      "id": 6,
+      "name": "Nordic Ceramic Sculptural Table Lamp",
+      "cat_id": 3,
+      "price": 2800,
+      "sale_price": null,
+      "stock": 20,
+      "image": "/images/prod-6.jpg",
+      "description": "Hand-thrown matte textured stoneware ceramic base complemented by a natural woven linen shade. Emits warm ambient illumination for serene interiors.",
+      "variants": "{\"colors\":[\"Cream\",\"Sage\"]}",
+      "flash_end": null,
+      "active": 1
+    },
+    {
+      "id": 7,
+      "name": "Botanical Amber Soy Scented Candle",
+      "cat_id": 3,
+      "price": 1450,
+      "sale_price": 990,
+      "stock": 60,
+      "image": "/images/prod-7.jpg",
+      "description": "Poured with 100% organic soy wax and natural wooden wick in an apothecary amber glass vessel. Infused with cedarwood, vanilla amber, and bergamot essential oils.",
+      "variants": "{}",
+      "flash_end": "2026-10-28T18:03:26.713Z",
+      "active": 1
+    },
+    {
+      "id": 8,
+      "name": "Lumière 20% Vitamin C Radiance Serum",
+      "cat_id": 4,
+      "price": 1850,
+      "sale_price": null,
+      "stock": 43,
+      "image": "/images/prod-8.jpg",
+      "description": "Advanced antioxidant brightening elixir formulated with 20% stabilized L-Ascorbic Acid, pure hyaluronic acid, and botanical ferulic acid for a luminous, firm complexion.",
+      "variants": "{}",
+      "flash_end": null,
+      "active": 1
+    }
+  ],
+  "coupons": [
+    {
+      "code": "WELCOME10",
+      "percent": 10,
+      "active": 1
+    },
+    {
+      "code": "ELEGANT20",
+      "percent": 20,
+      "active": 1
+    }
+  ],
+  "settings": [
+    {
+      "k": "free_ship",
+      "v": "3000"
+    },
+    {
+      "k": "ship_dhaka",
+      "v": "60"
+    },
+    {
+      "k": "ship_outside",
+      "v": "120"
+    },
+    {
+      "k": "shop_name",
+      "v": "Luxury & Elegant"
+    },
+    {
+      "k": "video_ad_active",
+      "v": "1"
+    },
+    {
+      "k": "video_ad_cta_link",
+      "v": "#shop"
+    },
+    {
+      "k": "video_ad_cta_text",
+      "v": "Shop The Collection"
+    },
+    {
+      "k": "video_ad_poster",
+      "v": "/images/video-poster.jpg"
+    },
+    {
+      "k": "video_ad_subtitle",
+      "v": "Experience our 2026 flagship curation — forged from surgical-grade gold alloy, scratchproof sapphire crystal, and acoustic titanium."
+    },
+    {
+      "k": "video_ad_tag",
+      "v": "✦ 3D CRAFTSMANSHIP CINEMATIC"
+    },
+    {
+      "k": "video_ad_title",
+      "v": "Precision in Motion. Sound in Perfection."
+    },
+    {
+      "k": "video_ad_url",
+      "v": "/videos/promo.webm"
+    },
+    {
+      "k": "whatsapp",
+      "v": "8801700000000"
+    }
+  ]
+}

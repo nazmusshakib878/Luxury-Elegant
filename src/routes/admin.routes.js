@@ -11,37 +11,37 @@ router.use(requireStaffOrAdmin);
 router.get('/events', admin.getEvents);
 
 // Dashboard metrics
-router.get('/stats', admin.getStats);
+router.get('/stats', asyncHandler(admin.getStats));
 
 // Products
-router.get('/products', admin.getProducts);
+router.get('/products', asyncHandler(admin.getProducts));
 router.post('/products', asyncHandler(admin.createProduct));
 router.put('/products/:id', asyncHandler(admin.updateProduct));
-router.delete('/products/:id', requireAdmin, admin.deleteProduct);
+router.delete('/products/:id', requireAdmin, asyncHandler(admin.deleteProduct));
 
 // Categories
 router.post('/categories', asyncHandler(admin.createCategory));
-router.delete('/categories/:id', requireAdmin, admin.deleteCategory);
+router.delete('/categories/:id', requireAdmin, asyncHandler(admin.deleteCategory));
 
 // Orders
-router.get('/orders', admin.getOrders);
+router.get('/orders', asyncHandler(admin.getOrders));
 router.put('/orders/:id', asyncHandler(admin.updateOrder));
 
 // Customers & Coupons
-router.get('/customers', admin.getCustomers);
-router.get('/coupons', admin.getCoupons);
+router.get('/customers', asyncHandler(admin.getCustomers));
+router.get('/coupons', asyncHandler(admin.getCoupons));
 router.post('/coupons', asyncHandler(admin.createCoupon));
-router.delete('/coupons/:c', admin.deleteCoupon);
+router.delete('/coupons/:c', asyncHandler(admin.deleteCoupon));
 
 // Abandoned carts & Settings
-router.get('/abandoned', admin.getAbandonedCarts);
-router.get('/settings', admin.getSettings);
-router.put('/settings', requireAdmin, admin.updateSettings);
+router.get('/abandoned', asyncHandler(admin.getAbandonedCarts));
+router.get('/settings', asyncHandler(admin.getSettings));
+router.put('/settings', requireAdmin, asyncHandler(admin.updateSettings));
 
 // Staff management & Backup (Admin only)
-router.get('/staff', requireAdmin, admin.getStaff);
+router.get('/staff', requireAdmin, asyncHandler(admin.getStaff));
 router.post('/staff', requireAdmin, asyncHandler(admin.createStaff));
-router.get('/backup', requireAdmin, admin.backupDatabase);
+router.get('/backup', requireAdmin, asyncHandler(admin.backupDatabase));
 router.post('/upload-video', requireAdmin, asyncHandler(admin.uploadVideoAd));
 
 module.exports = router;

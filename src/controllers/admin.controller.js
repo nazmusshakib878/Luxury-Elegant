@@ -23,10 +23,9 @@ exports.getEvents = (req, res) => {
 };
 
 // Dashboard analytics & metrics
-exports.getStats = (req, res) => {
+exports.getStats = async (req, res) => {
   const liveFilter = "status NOT IN ('cancelled', 'refunded') AND (payment_status = 'paid' OR status = 'delivered')";
-  const getSingle = (sql) => db.prepare(sql).get();
-  const allOrders = db.prepare('SELECT * FROM orders').all();
+  const allOrders = await db.all('SELECT * FROM orders');
 
   // Calculate top selling products
   const topProductsMap = {};
@@ -41,53 +40,51 @@ exports.getStats = (req, res) => {
       } catch {}
     });
 
-  const revenueRow = getSingle(`SELECT IFNULL(SUM(total), 0) AS v FROM orders WHERE ${liveFilter}`);
-  const todayRow = getSingle(`SELECT IFNULL(SUM(total), 0) AS v FROM orders WHERE ${liveFilter} AND DATE(created) = DATE('now')`);
-  const customerRow = getSingle("SELECT COUNT(*) AS v FROM users WHERE role = 'customer'");
+  const revenueRow = await db.get(`SELECT IFNULL(SUM(total), 0) AS v FROM orders WHERE ${liveFilter}`);
+  const todayRow = await db.get(`SELECT IFNULL(SUM(total), 0) AS v FROM orders WHERE ${liveFilter} AND DATE(created) = DATE('now')`);
+  const customerRow = await db.get("SELECT COUNT(*) AS v FROM users WHERE role = 'customer'");
 
-  const byStatus = db.prepare('SELECT status, COUNT(*) AS n FROM orders GROUP BY status').all();
-  const days = db.prepare(`
+  const byStatus = await db.all('SELECT status, COUNT(*) AS n FROM orders GROUP BY status');
+  const days = await db.all(`
     SELECT DATE(created) AS d, SUM(total) AS v 
     FROM orders 
     WHERE ${liveFilter} AND created >= DATE('now', '-6 day') 
     GROUP BY d
-  `).all();
+  `);
 
   const top = Object.entries(topProductsMap)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  const low = db.prepare('SELECT id, name, stock FROM products WHERE stock <= 5 ORDER BY stock ASC').all();
+  const low = await db.all('SELECT id, name, stock FROM products WHERE stock <= 5 ORDER BY stock ASC');
 
   res.json({
-    revenue: revenueRow.v,
-    today: todayRow.v,
+    revenue: revenueRow?.v ? +revenueRow.v : 0,
+    today: todayRow?.v ? +todayRow.v : 0,
     orders: allOrders.length,
-    customers: customerRow.v,
-    byStatus,
-    days,
+    customers: customerRow?.v ? +customerRow.v : 0,
+    byStatus: (byStatus || []).map((s) => ({ status: s.status, n: +s.n })),
+    days: (days || []).map((d) => ({ d: d.d, v: +d.v })),
     top,
-    low,
+    low: (low || []).map((l) => ({ ...l, stock: +l.stock })),
   });
 };
 
-// Product management
-function parseProductPayload(body) {
-  // Category id resolution: body.cat_id, body.category_id, body.category
+// Product management helper
+async function parseProductPayload(body) {
   let catId = body.cat_id !== undefined ? body.cat_id : (body.category_id !== undefined ? body.category_id : body.category);
   if (catId !== undefined && catId !== null && catId !== '') {
     const trimmed = String(catId).trim();
     if (/^\d+$/.test(trimmed)) {
       catId = Number(trimmed);
     } else {
-      const found = db.prepare('SELECT id FROM categories WHERE LOWER(name) = LOWER(?)').get(trimmed);
+      const found = await db.get('SELECT id FROM categories WHERE LOWER(name) = LOWER(?)', [trimmed]);
       catId = found ? found.id : null;
     }
   } else {
     catId = null;
   }
 
-  // Price sanitization (strips currency symbols, commas)
   const sanitizeNum = (val) => {
     if (val === undefined || val === null || val === '') return null;
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
@@ -100,13 +97,11 @@ function parseProductPayload(body) {
   const salePrice = sanitizeNum(body.sale_price);
   const stock = body.stock !== undefined ? Math.max(0, parseInt(sanitizeNum(body.stock) || 0, 10)) : 0;
 
-  // Image path normalization
   let image = typeof body.image === 'string' ? body.image.trim() : '';
   if (image && !image.startsWith('http://') && !image.startsWith('https://') && !image.startsWith('data:') && !image.startsWith('/')) {
     image = image.startsWith('images/') ? '/' + image : '/images/' + image;
   }
 
-  // Active status
   let active = 1;
   const rawActive = body.active !== undefined ? body.active : body.is_active;
   if (rawActive === 0 || rawActive === false || rawActive === '0' || rawActive === 'false') {
@@ -127,61 +122,67 @@ function parseProductPayload(body) {
   ];
 }
 
-exports.getProducts = (req, res) => {
-  const products = db.prepare(PRODUCT_QUERY).all().map(shapeProduct);
+exports.getProducts = async (req, res) => {
+  const products = (await db.all(PRODUCT_QUERY)).map(shapeProduct);
   res.json(products);
 };
 
-exports.createProduct = (req, res) => {
+exports.createProduct = async (req, res) => {
   if (!req.body.name) {
     throw new Error('Product name is required');
   }
 
-  const result = db.prepare(`
+  const params = await parseProductPayload(req.body);
+  const result = await db.run(`
     INSERT INTO products (name, cat_id, price, sale_price, stock, image, description, variants, flash_end, active)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(...parseProductPayload(req.body));
+  `, params);
 
   res.json({ id: result.lastInsertRowid });
 };
 
-exports.updateProduct = (req, res) => {
-  db.prepare(`
+exports.updateProduct = async (req, res) => {
+  const params = await parseProductPayload(req.body);
+  await db.run(`
     UPDATE products 
     SET name = ?, cat_id = ?, price = ?, sale_price = ?, stock = ?, image = ?, description = ?, variants = ?, flash_end = ?, active = ?
     WHERE id = ?
-  `).run(...parseProductPayload(req.body), req.params.id);
+  `, [...params, req.params.id]);
 
   res.json({ ok: 1 });
 };
 
-exports.deleteProduct = (req, res) => {
-  db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
+exports.deleteProduct = async (req, res) => {
+  await db.run('DELETE FROM products WHERE id = ?', [req.params.id]);
   res.json({ ok: 1 });
 };
 
 // Category management
-exports.createCategory = (req, res) => {
-  db.prepare('INSERT INTO categories (name) VALUES (?)').run(req.body.name);
+exports.createCategory = async (req, res) => {
+  await db.run('INSERT INTO categories (name) VALUES (?)', [req.body.name]);
   res.json({ ok: 1 });
 };
 
-exports.deleteCategory = (req, res) => {
-  db.prepare('DELETE FROM categories WHERE id = ?').run(req.params.id);
+exports.deleteCategory = async (req, res) => {
+  await db.run('DELETE FROM categories WHERE id = ?', [req.params.id]);
   res.json({ ok: 1 });
 };
 
 // Order management
-exports.getOrders = (req, res) => {
-  const orders = db.prepare('SELECT * FROM orders ORDER BY id DESC').all().map((o) => ({
+exports.getOrders = async (req, res) => {
+  const orders = (await db.all('SELECT * FROM orders ORDER BY id DESC')).map((o) => ({
     ...o,
     items: JSON.parse(o.items || '[]'),
+    total: +o.total,
+    subtotal: +o.subtotal,
+    discount: +o.discount,
+    shipping: +o.shipping,
   }));
   res.json(orders);
 };
 
-exports.updateOrder = (req, res) => {
-  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(req.params.id);
+exports.updateOrder = async (req, res) => {
+  const order = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
   if (!order) {
     throw new Error('Order not found');
   }
@@ -194,60 +195,68 @@ exports.updateOrder = (req, res) => {
   if (terminalStatuses.includes(newStatus) && !terminalStatuses.includes(order.status)) {
     try {
       const items = JSON.parse(order.items || '[]');
-      const restoreStock = db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?');
-      items.forEach((item) => restoreStock.run(item.qty, item.id));
+      for (const item of items) {
+        await db.run('UPDATE products SET stock = stock + ? WHERE id = ?', [item.qty, item.id]);
+      }
     } catch {}
   }
 
-  db.prepare(`
+  await db.run(`
     UPDATE orders 
     SET status = ?, payment_status = ?, return_status = ? 
     WHERE id = ?
-  `).run(
+  `, [
     newStatus,
     payment_status || order.payment_status,
     return_status !== undefined ? return_status : order.return_status,
-    order.id
-  );
+    order.id,
+  ]);
 
   res.json({ ok: 1 });
 };
 
 // Customer list
-exports.getCustomers = (req, res) => {
-  const customers = db.prepare(`
+exports.getCustomers = async (req, res) => {
+  const customers = await db.all(`
     SELECT 
       u.id, u.name, u.email, u.phone, u.created,
       (SELECT COUNT(*) FROM orders WHERE user_id = u.id) AS orders,
       (SELECT IFNULL(SUM(total), 0) FROM orders WHERE user_id = u.id) AS spent
     FROM users u 
     WHERE role = 'customer'
-  `).all();
+    ORDER BY u.id DESC
+  `);
 
-  res.json(customers);
+  res.json(customers.map((c) => ({
+    ...c,
+    orders: +c.orders,
+    spent: +c.spent,
+  })));
 };
 
 // Coupon management
-exports.getCoupons = (req, res) => {
-  const coupons = db.prepare('SELECT * FROM coupons').all();
-  res.json(coupons);
+exports.getCoupons = async (req, res) => {
+  const coupons = await db.all('SELECT * FROM coupons ORDER BY code ASC');
+  res.json(coupons.map((c) => ({ ...c, percent: +c.percent })));
 };
 
-exports.createCoupon = (req, res) => {
-  db.prepare('INSERT OR REPLACE INTO coupons (code, percent, active) VALUES (?, ?, 1)')
-    .run(String(req.body.code || '').toUpperCase(), +req.body.percent);
+exports.createCoupon = async (req, res) => {
+  await db.run('INSERT INTO coupons (code, percent, active) VALUES (?, ?, 1)', [
+    String(req.body.code || '').toUpperCase(),
+    +req.body.percent,
+  ]);
 
   res.json({ ok: 1 });
 };
 
-exports.deleteCoupon = (req, res) => {
-  db.prepare('DELETE FROM coupons WHERE code = ?').run(req.params.c);
+exports.deleteCoupon = async (req, res) => {
+  await db.run('DELETE FROM coupons WHERE code = ?', [req.params.c]);
   res.json({ ok: 1 });
 };
 
 // Abandoned carts
-exports.getAbandonedCarts = (req, res) => {
-  const abandoned = db.prepare('SELECT * FROM abandoned ORDER BY updated DESC').all().map((a) => ({
+exports.getAbandonedCarts = async (req, res) => {
+  const abandoned = (await db.all('SELECT * FROM abandoned ORDER BY updated DESC')).map((a) => ({
     ...a,
     items: JSON.parse(a.items || '[]'),
   }));
@@ -255,48 +264,67 @@ exports.getAbandonedCarts = (req, res) => {
 };
 
 // Store Settings
-exports.getSettings = (req, res) => {
-  res.json(getStoreSettings());
+exports.getSettings = async (req, res) => {
+  res.json(await getStoreSettings());
 };
 
-exports.updateSettings = (req, res) => {
-  const insertOrReplace = db.prepare('INSERT OR REPLACE INTO settings (k, v) VALUES (?, ?)');
+exports.updateSettings = async (req, res) => {
   for (const key of Object.keys(DEFAULT_SETTINGS)) {
     if (key in req.body) {
-      insertOrReplace.run(key, String(req.body[key]));
+      await db.run('INSERT INTO settings (k, v) VALUES (?, ?)', [key, String(req.body[key])]);
     }
   }
   res.json({ ok: 1 });
 };
 
 // Staff management
-exports.getStaff = (req, res) => {
-  const staff = db.prepare("SELECT id, name, email, role FROM users WHERE role != 'customer'").all();
+exports.getStaff = async (req, res) => {
+  const staff = await db.all("SELECT id, name, email, role FROM users WHERE role != 'customer' ORDER BY id ASC");
   res.json(staff);
 };
 
-exports.createStaff = (req, res) => {
+exports.createStaff = async (req, res) => {
   const { name, email, password, role } = req.body;
   if (!name || !email || !password) {
     throw new Error('Name, email, and password are required');
   }
 
   const assignedRole = role === 'admin' ? 'admin' : 'staff';
-  db.prepare('INSERT INTO users (name, email, pass, role) VALUES (?, ?, ?, ?)')
-    .run(name, email.toLowerCase(), hashPassword(password), assignedRole);
+  await db.run('INSERT INTO users (name, email, pass, role) VALUES (?, ?, ?, ?)', [
+    name,
+    email.toLowerCase(),
+    hashPassword(password),
+    assignedRole,
+  ]);
 
   res.json({ ok: 1 });
 };
 
 // Database backup
-exports.backupDatabase = (req, res) => {
-  db.pragma('wal_checkpoint(TRUNCATE)');
-  const dbPath = path.resolve(process.cwd(), DB_FILE);
-  res.download(dbPath, 'shop-backup.db');
+exports.backupDatabase = async (req, res) => {
+  if (db.isPostgres) {
+    // If PostgreSQL, export seed JSON
+    const tables = ['users', 'categories', 'products', 'orders', 'coupons', 'reviews', 'abandoned', 'settings'];
+    const backup = {};
+    for (const t of tables) {
+      backup[t] = await db.all(`SELECT * FROM ${t}`);
+    }
+    res.setHeader('Content-Disposition', 'attachment; filename="shop-backup.json"');
+    res.setHeader('Content-Type', 'application/json');
+    return res.send(JSON.stringify(backup, null, 2));
+  }
+
+  if (db.sqlite) {
+    db.sqlite.pragma('wal_checkpoint(TRUNCATE)');
+    const dbPath = path.resolve(process.cwd(), DB_FILE);
+    return res.download(dbPath, 'shop-backup.db');
+  }
+
+  res.status(400).json({ error: 'Backup not available in current environment' });
 };
 
 // Video Advertisement Upload
-exports.uploadVideoAd = (req, res) => {
+exports.uploadVideoAd = async (req, res) => {
   const { filename, base64 } = req.body;
   if (!filename || !base64) {
     throw new Error('Video filename and base64 data are required');
@@ -320,8 +348,7 @@ exports.uploadVideoAd = (req, res) => {
   fs.writeFileSync(filePath, buffer);
 
   const videoUrl = '/videos/' + safeFilename;
-  db.prepare('INSERT OR REPLACE INTO settings (k, v) VALUES (?, ?)').run('video_ad_url', videoUrl);
+  await db.run('INSERT INTO settings (k, v) VALUES (?, ?)', ['video_ad_url', videoUrl]);
 
   res.json({ ok: 1, url: videoUrl });
 };
-

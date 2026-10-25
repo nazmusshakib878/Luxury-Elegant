@@ -11,6 +11,13 @@ node_modules/
 *.db-shm
 *.db-wal
 
+# Secure Local Backups (Never commit or push)
+secure_backup/
+backups/
+*.backup
+*.bak
+*.sqlite.bak
+
 # Logs & temp files
 npm-debug.log*
 yarn-debug.log*
