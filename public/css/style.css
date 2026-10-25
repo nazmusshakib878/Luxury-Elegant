@@ -1,0 +1,363 @@
+/* Luxury & Elegant E-Commerce Modern Storefront Stylesheet */
+
+:root {
+  --color-brand: #0f3d2e;
+  --color-brand-hover: #165a44;
+  --color-gold: #c8a24a;
+  --color-gold-light: #e5c158;
+  --color-cream: #faf7f2;
+  --color-ink: #1c1917;
+  --border-color: #e7e5e4;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+
+/* Button Components */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.75rem 1.6rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-p {
+  background-color: var(--color-brand);
+  color: #ffffff;
+  border: 1.5px solid transparent;
+  box-shadow: 0 4px 14px rgba(15, 61, 46, 0.25);
+}
+
+.btn-p:hover {
+  background-color: var(--color-brand-hover);
+  box-shadow: 0 6px 20px rgba(15, 61, 46, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-o {
+  background-color: transparent;
+  border: 1.5px solid #d6d3d1;
+  color: var(--color-ink);
+}
+
+.btn-o:hover {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+  background-color: rgba(15, 61, 46, 0.04);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #dfbf68 0%, #c8a24a 50%, #b38b32 100%);
+  color: #1c1917;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 8px 24px -4px rgba(200, 162, 74, 0.4);
+}
+
+.btn-gold:hover {
+  background: linear-gradient(135deg, #ebd07a 0%, #d4b055 50%, #c1993b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -4px rgba(200, 162, 74, 0.5);
+}
+
+.btn-outline-white {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+}
+
+.btn-outline-white:hover {
+  background: #ffffff;
+  color: var(--color-ink);
+  border-color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Form Inputs */
+.inp {
+  width: 100%;
+  border: 1.5px solid var(--border-color);
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: var(--color-ink);
+}
+
+.inp:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(15, 61, 46, 0.12);
+}
+
+/* Filter Pills */
+.pill {
+  border: 1.5px solid var(--border-color);
+  border-radius: 9999px;
+  padding: 0.45rem 1.1rem;
+  background-color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #44403c;
+}
+
+.pill:hover {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.pill.on {
+  background-color: var(--color-brand);
+  color: #ffffff;
+  border-color: var(--color-brand);
+  box-shadow: 0 4px 12px rgba(15, 61, 46, 0.2);
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.glass-dark {
+  background: rgba(15, 61, 46, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Category & Product Cards */
+.category-card {
+  overflow: hidden;
+  border-radius: 1.5rem;
+  position: relative;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+}
+
+.category-card img {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -8px rgba(15, 61, 46, 0.15);
+}
+
+.category-card:hover img {
+  transform: scale(1.08);
+}
+
+.trust-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.trust-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.06);
+}
+
+/* Slide-out Cart Drawer */
+#drawer {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Smooth Fade In Animation */
+.fade {
+  animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Floating Badge Animation */
+@keyframes floatBadge {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float {
+  animation: floatBadge 4s ease-in-out infinite;
+}
+
+/* Shimmer Highlight */
+.shimmer-text {
+  background: linear-gradient(90deg, #ffffff 0%, #c8a24a 50%, #ffffff 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shine 5s linear infinite;
+}
+
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* 3D Video Advertisement Section Styles */
+.video-ad-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2.5rem;
+  background-color: #05140e;
+  border: 1px solid rgba(200, 162, 74, 0.25);
+  box-shadow: 0 25px 50px -12px rgba(12, 49, 37, 0.45);
+  min-height: 480px;
+}
+
+@media (min-width: 1024px) {
+  .video-ad-container {
+    min-height: 560px;
+  }
+}
+
+.video-ad-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.6s ease;
+}
+
+.video-ad-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 75% 50%, rgba(15, 61, 46, 0.2) 0%, rgba(5, 20, 14, 0.85) 75%),
+              linear-gradient(to top, rgba(5, 20, 14, 0.95) 0%, rgba(5, 20, 14, 0.4) 50%, rgba(5, 20, 14, 0.8) 100%);
+  pointer-events: none;
+}
+
+.video-control-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.video-control-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.08);
+}
+
+/* Interactive 3D Product Atelier Section */
+.atelier-3d-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2.5rem;
+  background: radial-gradient(circle at 60% 30%, rgba(15, 61, 46, 0.45) 0%, rgba(10, 26, 19, 0.95) 60%, #050d09 100%);
+  border: 1px solid rgba(200, 162, 74, 0.25);
+  box-shadow: 0 30px 65px -15px rgba(0, 0, 0, 0.65);
+}
+
+.atelier-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 420px;
+  height: 520px;
+  touch-action: pan-y;
+}
+
+@media (max-width: 640px) {
+  .atelier-canvas-wrapper {
+    min-height: 360px;
+    height: 400px;
+  }
+}
+
+.atelier-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.atelier-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(200, 162, 74, 0.4);
+}
+
+.atelier-control-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.atelier-control-btn:hover {
+  background: rgba(200, 162, 74, 0.25);
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  transform: scale(1.08);
+}
+
+.atelier-control-btn:active {
+  transform: scale(0.95);
+}
+
+
+

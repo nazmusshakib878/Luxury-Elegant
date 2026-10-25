@@ -1,0 +1,20 @@
+module.exports = {
+  DEFAULT_SETTINGS: {
+    shop_name: 'Luxury & Elegant',
+    whatsapp: '8801700000000',
+    free_ship: '3000',
+    ship_dhaka: '60',
+    ship_outside: '120',
+    video_ad_active: '1',
+    video_ad_url: '/videos/promo.webm',
+    video_ad_poster: '/images/video-poster.jpg',
+    video_ad_tag: '✦ 3D CRAFTSMANSHIP CINEMATIC',
+    video_ad_title: 'Precision in Motion. Sound in Perfection.',
+    video_ad_subtitle: 'Experience our 2026 flagship curation — forged from surgical-grade gold alloy, scratchproof sapphire crystal, and acoustic titanium.',
+    video_ad_cta_text: 'Shop The Collection',
+    video_ad_cta_link: '#shop',
+  },
+  ORDER_STATUSES: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'refunded'],
+  PAYMENT_STATUSES: ['unpaid', 'paid', 'failed', 'refunded'],
+  RETURN_STATUSES: ['requested', 'approved', 'rejected', 'refunded'],
+};

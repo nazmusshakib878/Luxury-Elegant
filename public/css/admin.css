@@ -1,0 +1,122 @@
+/* Luxury & Elegant Admin Dashboard Stylesheet */
+
+body {
+  background-color: #f5f5f4;
+  color: #1c1917;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Inputs */
+.inp {
+  width: 100%;
+  border: 1.5px solid #e7e5e4;
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #1c1917;
+}
+
+.inp:focus {
+  border-color: #0f3d2e;
+  box-shadow: 0 0 0 3px rgba(15, 61, 46, 0.1);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 10px;
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  background-color: #0f3d2e;
+  color: #ffffff;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background-color: #165a44;
+}
+
+.btn.o {
+  background-color: #ffffff;
+  color: #1c1917;
+  border: 1.5px solid #e7e5e4;
+}
+
+.btn.o:hover {
+  border-color: #0f3d2e;
+  color: #0f3d2e;
+}
+
+.btn.d {
+  background-color: #e11d48;
+  color: #ffffff;
+}
+
+.btn.d:hover {
+  background-color: #be123c;
+}
+
+/* Table styles */
+th {
+  text-align: left;
+  font-size: 0.75rem;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  background: #fafaf9;
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #f5f5f4;
+  vertical-align: middle;
+}
+
+/* Navigation */
+.nav {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  color: #d6d3d1;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+}
+
+.nav.on,
+.nav:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+/* Modal Dialog */
+dialog {
+  border: none;
+  border-radius: 20px;
+  padding: 1.75rem;
+  width: min(560px, 95vw);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}
