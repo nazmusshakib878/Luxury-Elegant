@@ -260,6 +260,16 @@ async function initSchema() {
               for (const c of (snapshot.coupons || [])) {
                 await db.run('INSERT OR IGNORE INTO coupons (code, percent, active) VALUES (?, ?, ?)', [c.code, c.percent, c.active]);
               }
+              // Ensure default coupons
+              const defCoupons = [
+                ['WELCOME10', 10, 1],
+                ['LUXURY10', 10, 1],
+                ['VIP20', 20, 1],
+                ['ELEGANT15', 15, 1],
+              ];
+              for (const [code, pct, act] of defCoupons) {
+                await db.run('INSERT OR IGNORE INTO coupons (code, percent, active) VALUES (?, ?, ?)', [code, pct, act]);
+              }
             }
           } catch (seedErr) {
             console.error('Error seeding SQLite catalog:', seedErr.message);

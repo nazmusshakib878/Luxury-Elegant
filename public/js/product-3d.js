@@ -36,7 +36,7 @@
   let isInteracting = false;
   let previousPointer = { x: 0, y: 0 };
   let modelRotation = { x: 0.12, y: 0.2 };
-  let targetRotation = { x: 0.12, y: 0.2 };
+  let targetRotation = { x: 0.18, y: -0.22 };
   let cameraDistance = 8.2;
   let targetCameraDistance = 8.2;
   let isVisible = true;
@@ -337,39 +337,45 @@
   }
 
   // 2. Sunburst Dark Emerald Watch Dial
+  // 2. Ultra-High Resolution Swiss Sunburst Emerald Watch Dial (2048x2048)
+  // 2. Ultra-High Resolution Swiss Sunburst Emerald Watch Dial (2048x2048)
+  // 2. Ultra-High Resolution Swiss Sunburst Emerald Watch Dial (2048x2048)
+  // 2. Ultra-High Resolution Swiss Sunburst Emerald Watch Dial (2048x2048)
+  // 2. Ultra-High Resolution Swiss Sunburst Emerald Watch Dial (2048x2048)
   function createDialTexture() {
-    const size = 1024;
+    const size = 2048;
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext('2d');
     const cx = size / 2;
     const cy = size / 2;
-    const radius = size * 0.46;
+    const radius = size * 0.495; // Fills the dial face circle completely
 
     // Deep Luxury Emerald Base
-    ctx.fillStyle = '#03140c';
+    ctx.fillStyle = '#011209';
     ctx.fillRect(0, 0, size, size);
 
-    // Radial Sunburst Color Gradient
-    const bgGrad = ctx.createRadialGradient(cx, cy, radius * 0.08, cx, cy, radius);
-    bgGrad.addColorStop(0, '#0d4734');
-    bgGrad.addColorStop(0.45, '#082f22');
-    bgGrad.addColorStop(0.85, '#041911');
-    bgGrad.addColorStop(1, '#020d08');
+    // Deep Regal Rolex-Grade Emerald Sunburst Gradient
+    const bgGrad = ctx.createRadialGradient(cx, cy, radius * 0.05, cx, cy, radius);
+    bgGrad.addColorStop(0, '#0e4f37');    // Rich saturated jewel emerald
+    bgGrad.addColorStop(0.35, '#073625'); // Deep forest emerald
+    bgGrad.addColorStop(0.70, '#042217'); // Regal shadowy emerald
+    bgGrad.addColorStop(0.92, '#02130d'); // Dark velvet rim
+    bgGrad.addColorStop(1, '#010a06');
     ctx.fillStyle = bgGrad;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
 
-    // 360 Radial Sunburst Reflections (simulating dynamic luxury chronometer dial grain)
+    // 720 Micro-Groove Sunray Brushed Lines (Shimmering Light Catchers)
     ctx.save();
     ctx.translate(cx, cy);
-    for (let a = 0; a < 360; a += 1.5) {
-      const rad = (a * Math.PI) / 180;
-      const alpha = Math.sin(rad * 4) * 0.08 + 0.06;
-      ctx.strokeStyle = `rgba(225, 255, 235, ${alpha.toFixed(3)})`;
-      ctx.lineWidth = 1.2;
+    for (let a = 0; a < 720; a += 1) {
+      const rad = (a * Math.PI) / 360;
+      const alpha = 0.035 + Math.sin(rad * 8) * 0.025;
+      ctx.strokeStyle = "rgba(165, 245, 210, " + alpha.toFixed(3) + ")";
+      ctx.lineWidth = 1.3;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(Math.cos(rad) * radius, Math.sin(rad) * radius);
@@ -377,82 +383,186 @@
     }
     ctx.restore();
 
-    // Outer Chapter Ring (Railway Minute Track)
-    ctx.strokeStyle = 'rgba(200, 162, 74, 0.45)';
-    ctx.lineWidth = 2;
+    // Concentric Circular Guilloché Tracks
+    [0.72, 0.73, 0.74, 0.88, 0.89].forEach((frac) => {
+      ctx.strokeStyle = 'rgba(245, 215, 127, 0.18)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * frac, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    // Railway Minute Track (Outer Chapter Ring)
+    ctx.strokeStyle = 'rgba(245, 215, 127, 0.65)';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(cx, cy, radius * 0.94, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(cx, cy, radius * 0.86, 0, Math.PI * 2);
+    ctx.arc(cx, cy, radius * 0.87, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 60 Minute Track Marks & Luminous Pearls
+    // 60 Minute Track Marks & 3D Luminous Pearls
     for (let m = 0; m < 60; m++) {
       const angle = (m * Math.PI) / 30 - Math.PI / 2;
       const isFiveMin = m % 5 === 0;
       const outer = radius * 0.94;
-      const inner = isFiveMin ? radius * 0.86 : radius * 0.90;
+      const inner = isFiveMin ? radius * 0.87 : radius * 0.905;
 
-      ctx.strokeStyle = isFiveMin ? '#f0d283' : 'rgba(215, 185, 110, 0.6)';
-      ctx.lineWidth = isFiveMin ? 3.5 : 1.5;
+      ctx.strokeStyle = isFiveMin ? '#fceda8' : 'rgba(235, 205, 125, 0.55)';
+      ctx.lineWidth = isFiveMin ? 5 : 2;
       ctx.beginPath();
       ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
       ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
       ctx.stroke();
 
-      // Luminescent Pearl at every 5-minute marker
+      // Luminous Pearl with Gold Bezel at every 5-minute marker
       if (isFiveMin) {
-        const pearlDist = radius * 0.82;
-        ctx.fillStyle = '#f8fbf6';
+        const pearlDist = radius * 0.835;
+        const px = cx + Math.cos(angle) * pearlDist;
+        const py = cy + Math.sin(angle) * pearlDist;
+
+        // Gold Bezel
+        ctx.fillStyle = '#d4a340';
         ctx.beginPath();
-        ctx.arc(cx + Math.cos(angle) * pearlDist, cy + Math.sin(angle) * pearlDist, 3.5, 0, Math.PI * 2);
+        ctx.arc(px, py, 6.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#c8a24a';
-        ctx.lineWidth = 1;
-        ctx.stroke();
+
+        // Luminous Core
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
-    // Refined Dial Typography
+    // 12 Applied 3D Faceted Gold Roman Numerals
+    const romanNumerals = [
+      { text: 'XII', angle: -Math.PI / 2, size: 74 },
+      { text: 'I', angle: -Math.PI / 3, size: 66 },
+      { text: 'II', angle: -Math.PI / 6, size: 66 },
+      { text: '', angle: 0, size: 0 }, // 3 o'clock is Date Window
+      { text: 'IIII', angle: Math.PI / 6, size: 60 },
+      { text: 'V', angle: Math.PI / 3, size: 66 },
+      { text: 'VI', angle: Math.PI / 2, size: 74 },
+      { text: 'VII', angle: (2 * Math.PI) / 3, size: 66 },
+      { text: 'VIII', angle: (5 * Math.PI) / 6, size: 60 },
+      { text: 'IX', angle: Math.PI, size: 66 },
+      { text: 'X', angle: (7 * Math.PI) / 6, size: 66 },
+      { text: 'XI', angle: (4 * Math.PI) / 3, size: 66 },
+    ];
+
+    const numeralRadius = radius * 0.73;
+    romanNumerals.forEach((item) => {
+      if (!item.text) return;
+      const nx = cx + Math.cos(item.angle) * numeralRadius;
+      const ny = cy + Math.sin(item.angle) * numeralRadius;
+
+      ctx.save();
+      ctx.translate(nx, ny);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '700 ' + item.size + 'px "Playfair Display", Georgia, serif';
+
+      // 3D Soft Drop Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillText(item.text, 3, 4);
+
+      // Gold Gradient Foil Face
+      const numGrad = ctx.createLinearGradient(0, -item.size / 2, 0, item.size / 2);
+      numGrad.addColorStop(0, '#fff6d6');
+      numGrad.addColorStop(0.3, '#f5d77f');
+      numGrad.addColorStop(0.7, '#d4a340');
+      numGrad.addColorStop(1, '#a67c1e');
+      ctx.fillStyle = numGrad;
+      ctx.fillText(item.text, 0, 0);
+
+      // Bright Top Chamfer Stroke
+      ctx.strokeStyle = 'rgba(255, 245, 215, 0.55)';
+      ctx.lineWidth = 1.2;
+      ctx.strokeText(item.text, 0, 0);
+
+      ctx.restore();
+    });
+
+    // 18K Gold Coronet / Luxury Emblem at 12 o'clock
+    ctx.save();
+    ctx.translate(cx, cy - radius * 0.58);
+    ctx.fillStyle = '#fce29e';
+    ctx.beginPath();
+    ctx.moveTo(0, -18);
+    ctx.lineTo(12, 14);
+    ctx.lineTo(-12, 14);
+    ctx.closePath();
+    ctx.fill();
+    // 5 Crown Points
+    [-18, -9, 0, 9, 18].forEach((px, i) => {
+      const py = Math.abs(i - 2) * 5;
+      ctx.beginPath();
+      ctx.arc(px, -22 + py, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+
+    // High Horology Typographic Imprint
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '600 34px "Playfair Display", Georgia, serif';
-    ctx.fillStyle = '#f0d283';
-    ctx.fillText('LUXURY & ELEGANT', cx, cy - radius * 0.46);
 
-    ctx.font = '500 15px "Inter", sans-serif';
-    ctx.fillStyle = 'rgba(210, 175, 90, 0.85)';
-    ctx.fillText('AUTOMATIC CHRONOMETER', cx, cy - radius * 0.36);
+    // "LUXURY & ELEGANT"
+    ctx.font = '700 48px "Playfair Display", Georgia, serif';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillText('LUXURY & ELEGANT', cx + 1, cy - radius * 0.38 + 2);
+    ctx.fillStyle = '#fff4cc';
+    ctx.fillText('LUXURY & ELEGANT', cx, cy - radius * 0.38);
 
-    ctx.font = '600 15px "Inter", sans-serif';
+    // "GENÈVE"
+    ctx.font = '600 24px "Inter", sans-serif';
+    ctx.fillStyle = 'rgba(245, 215, 127, 0.9)';
+    ctx.fillText('GENÈVE', cx, cy - radius * 0.28);
+
+    // "AUTOMATIC CHRONOMETER"
+    ctx.font = '600 22px "Inter", sans-serif';
+    ctx.fillStyle = '#fce29e';
+    ctx.fillText('AUTOMATIC CHRONOMETER', cx, cy + radius * 0.38);
+
+    // "OFFICIALLY CERTIFIED · 100M"
+    ctx.font = '500 18px "Inter", sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    ctx.fillText('28,800 VPH · 50M', cx, cy + radius * 0.44);
+    ctx.fillText('OFFICIALLY CERTIFIED · 100M', cx, cy + radius * 0.48);
 
-    ctx.font = '500 12px "Inter", sans-serif';
-    ctx.fillStyle = 'rgba(210, 175, 90, 0.8)';
-    ctx.fillText('GENEVE CRAFTED', cx, cy + radius * 0.54);
+    // "SWISS MADE" at 6 o'clock
+    ctx.font = '700 16px "Inter", sans-serif';
+    ctx.fillStyle = 'rgba(245, 215, 127, 0.8)';
+    ctx.fillText('✦  SWISS MADE  ✦', cx, cy + radius * 0.79);
 
-    // Date Window at 3 o'clock
-    const dateX = cx + radius * 0.58;
+    // Date Window at 3 o'clock (Framed in 18K Beveled Gold)
+    const dateX = cx + numeralRadius;
     const dateY = cy;
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#c8a24a';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.rect(dateX - 22, dateY - 16, 44, 32);
-    ctx.fill();
-    ctx.stroke();
+    const dw = 72;
+    const dh = 52;
 
-    ctx.font = 'bold 18px "Inter", sans-serif';
-    ctx.fillStyle = '#111827';
-    ctx.fillText('26', dateX, dateY + 1);
+    // Outer Gold Frame
+    ctx.fillStyle = '#caa140';
+    ctx.fillRect(dateX - dw / 2 - 4, dateY - dh / 2 - 4, dw + 8, dh + 8);
+
+    // Inner Polished Chamfer
+    ctx.fillStyle = '#fce29e';
+    ctx.fillRect(dateX - dw / 2 - 2, dateY - dh / 2 - 2, dw + 4, dh + 4);
+
+    // White Date Disc
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(dateX - dw / 2, dateY - dh / 2, dw, dh);
+
+    // Date Number "26"
+    ctx.font = '700 32px "Inter", sans-serif';
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText('26', dateX, dateY + 2);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.center.set(0.5, 0.5);
     texture.rotation = 0;
-    texture.anisotropy = 8;
+    texture.anisotropy = 16;
     return texture;
   }
 
@@ -651,40 +761,57 @@
   // -------------------------------------------------------------
 
   // 1. Luxury Watch (ID: 3 — Geneva Gold Minimalist Watch)
+  // 1. Luxury Watch (ID: 3 — Geneva Gold Minimalist Watch Masterpiece)
+  // 1. Luxury Watch (ID: 3 — Geneva Gold Minimalist Watch Masterpiece)
+  // 1. Luxury Watch (ID: 3 — Geneva Gold Minimalist Watch Masterpiece)
+  // 1. Luxury Watch (ID: 3 — Geneva Gold Minimalist Watch Masterpiece)
+  // 1. Luxury Watch (ID: 3 — Geneva Gold Minimalist Watch Masterpiece)
   function buildWatchModel(envMap) {
     const master = new THREE.Group();
     master.name = 'watch_master';
 
-    // Materials
+    // Materials — Pure 18K Swiss Champagne Gold & Optical Sapphire
     const goldMat = new THREE.MeshPhysicalMaterial({
-      color: 0xdfbf68,
-      metalness: 0.95,
-      roughness: 0.15,
+      color: 0xf5d77f,
+      metalness: 0.98,
+      roughness: 0.10,
       envMap: envMap,
-      envMapIntensity: 1.6,
-      clearcoat: 0.85,
-      clearcoatRoughness: 0.08
+      envMapIntensity: 2.4,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.04
     });
 
     const brushedGoldMat = new THREE.MeshStandardMaterial({
-      color: 0xc8a24a,
-      metalness: 0.90,
-      roughness: 0.32,
+      color: 0xeec96a,
+      metalness: 0.92,
+      roughness: 0.26,
       envMap: envMap,
-      envMapIntensity: 1.3
+      envMapIntensity: 1.6
     });
 
+    const flutedGoldMat = new THREE.MeshPhysicalMaterial({
+      color: 0xfceda8,
+      metalness: 0.98,
+      roughness: 0.12,
+      flatShading: true,
+      envMap: envMap,
+      envMapIntensity: 2.8,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.03
+    });
+
+    // Optical Grade Sapphire Crystal (Crystal-clear, zero occlusion of dial)
     const sapphireGlassMat = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
-      transmission: 0.95,
-      opacity: 1,
       transparent: true,
-      roughness: 0.03,
-      ior: 1.77,
+      opacity: 0.16,
+      roughness: 0.0,
+      metalness: 0.08,
       envMap: envMap,
-      envMapIntensity: 2.0,
+      envMapIntensity: 3.0,
       clearcoat: 1.0,
-      clearcoatRoughness: 0.04
+      clearcoatRoughness: 0.0,
+      depthWrite: false
     });
 
     const steelMat = new THREE.MeshPhysicalMaterial({
@@ -695,176 +822,163 @@
       envMapIntensity: 1.5
     });
 
+    const bluedSteelMat = new THREE.MeshPhysicalMaterial({
+      color: 0x1d4ed8,
+      metalness: 0.96,
+      roughness: 0.12,
+      envMap: envMap,
+      envMapIntensity: 2.2,
+      clearcoat: 1.0
+    });
+
     const rubyJewelMat = new THREE.MeshPhysicalMaterial({
       color: 0xd91438,
-      transmission: 0.7,
-      roughness: 0.1,
+      transmission: 0.8,
+      roughness: 0.08,
       ior: 1.76,
-      emissive: 0x4a000d,
-      emissiveIntensity: 0.4
+      emissive: 0x5a0010,
+      emissiveIntensity: 0.5
     });
 
     const topStrapMat = new THREE.MeshStandardMaterial({
       map: createLeatherStrapTexture(true),
-      roughness: 0.65,
-      metalness: 0.08,
+      roughness: 0.58,
+      metalness: 0.10,
       envMap: envMap,
-      envMapIntensity: 0.4
+      envMapIntensity: 0.5
     });
 
     const bottomStrapMat = new THREE.MeshStandardMaterial({
       map: createLeatherStrapTexture(false),
-      roughness: 0.65,
-      metalness: 0.08,
+      roughness: 0.58,
+      metalness: 0.10,
       envMap: envMap,
-      envMapIntensity: 0.4
+      envMapIntensity: 0.5
     });
 
-    // 1.1 Sapphire Crystal (+Z front)
+    // 1.1 Sapphire Crystal Dome (+Z front, seated FLUSH in the bezel)
     const crystalGroup = new THREE.Group();
-    const crystalGeo = new THREE.CylinderGeometry(2.02, 2.02, 0.06, 64);
+    const crystalGeo = new THREE.CircleGeometry(2.05, 64);
     const crystalMesh = new THREE.Mesh(crystalGeo, sapphireGlassMat);
-    crystalMesh.rotation.x = -Math.PI / 2;
+    crystalMesh.castShadow = false;
+    crystalMesh.renderOrder = 10;
     crystalGroup.add(crystalMesh);
-    crystalGroup.position.z = 0.42;
+    crystalGroup.position.z = 0.16; // Tightly seated
     master.add(crystalGroup);
 
-    // 1.2 Bezel Architecture (Mirror Polished Rim + Coin-Fluted Inner Ring)
+    // 1.2 Bezel Architecture: Coin-Fluted Bezel (90 sparkling micro-flutes) + Inner Polished Rim
     const bezelGroup = new THREE.Group();
-    const bezelRingGeo = new THREE.TorusGeometry(2.08, 0.10, 24, 80);
-    const bezelRing = new THREE.Mesh(bezelRingGeo, goldMat);
-    bezelGroup.add(bezelRing);
 
-    // Coin-fluted bezel (120 precision micro-flutes)
-    const flutingGeo = new THREE.CylinderGeometry(2.02, 2.02, 0.12, 120, 1, true);
-    const flutingMesh = new THREE.Mesh(flutingGeo, brushedGoldMat);
+    // 90 Flutes sparkling with flat shading (HOLLOW RING, openEnded = true!)
+    const flutingGeo = new THREE.CylinderGeometry(2.08, 2.16, 0.08, 90, 1, true);
+    const flutingMesh = new THREE.Mesh(flutingGeo, flutedGoldMat);
     flutingMesh.rotation.x = -Math.PI / 2;
     bezelGroup.add(flutingMesh);
-    bezelGroup.position.z = 0.32;
+
+    // Inner Polished Mirror Rim
+    const innerRimGeo = new THREE.TorusGeometry(2.06, 0.045, 16, 64);
+    const innerRim = new THREE.Mesh(innerRimGeo, goldMat);
+    bezelGroup.add(innerRim);
+
+    bezelGroup.position.z = 0.14; // Tightly seated on case
     master.add(bezelGroup);
 
-    // 1.3 Faceted 3D Dauphine Hands & Blued Steel Second Hand
+    // 1.3 Faceted 3D Dauphine Hands with Central Spine Ridge & Blued Steel Needle Second Hand
     const handsGroup = new THREE.Group();
 
-    // Helper: Faceted Dauphine Hand Geometry (triangular cross-section knife ridge)
-    function createDauphineHandGeo(length, baseWidth, thickness) {
-      const shape = new THREE.Shape();
-      shape.moveTo(0, -baseWidth * 0.4);
-      shape.lineTo(baseWidth / 2, 0);
-      shape.lineTo(0, length);
-      shape.lineTo(-baseWidth / 2, 0);
-      shape.closePath();
-      return new THREE.ExtrudeGeometry(shape, {
-        depth: thickness,
-        bevelEnabled: true,
-        bevelSegments: 2,
-        bevelSize: 0.012,
-        bevelThickness: 0.012
-      });
+    function create3DDauphineHand(length, baseWidth, thickness) {
+      const g = new THREE.Group();
+      // Left facet (Polished Champagne Gold, bright face)
+      const leftShape = new THREE.Shape();
+      leftShape.moveTo(0, -baseWidth * 0.35);
+      leftShape.lineTo(-baseWidth / 2, 0);
+      leftShape.lineTo(0, length);
+      leftShape.closePath();
+      const leftGeo = new THREE.ExtrudeGeometry(leftShape, { depth: thickness, bevelEnabled: false });
+      const leftMesh = new THREE.Mesh(leftGeo, goldMat);
+      
+      // Right facet (Brushed Gold, shaded facet for iconic Dauphine 3D central ridge)
+      const rightShape = new THREE.Shape();
+      rightShape.moveTo(0, -baseWidth * 0.35);
+      rightShape.lineTo(baseWidth / 2, 0);
+      rightShape.lineTo(0, length);
+      rightShape.closePath();
+      const rightGeo = new THREE.ExtrudeGeometry(rightShape, { depth: thickness, bevelEnabled: false });
+      const rightMesh = new THREE.Mesh(rightGeo, brushedGoldMat);
+      
+      // Central spine ridge highlight
+      const ridgeGeo = new THREE.BoxGeometry(0.015, length + baseWidth * 0.35, thickness * 1.2);
+      const ridgeMesh = new THREE.Mesh(ridgeGeo, goldMat);
+      ridgeMesh.position.set(0, (length - baseWidth * 0.35) / 2, thickness / 2);
+
+      g.add(leftMesh, rightMesh, ridgeMesh);
+      return g;
     }
 
-    // Hour Hand
-    const hourHandGeo = createDauphineHandGeo(1.05, 0.22, 0.025);
-    const hourHand = new THREE.Mesh(hourHandGeo, goldMat);
-    hourHand.position.set(0, 0, 0.08);
-    hourHand.rotation.z = Math.PI / 6; // pointing to ~10 o'clock
+    // Hour Hand (Pointing to 10:10 pose: ~10:08)
+    const hourHand = create3DDauphineHand(1.18, 0.22, 0.035);
+    hourHand.position.set(0, 0, 0.015);
+    hourHand.rotation.z = Math.PI * 0.62;
 
-    // Minute Hand
-    const minuteHandGeo = createDauphineHandGeo(1.55, 0.18, 0.025);
-    const minuteHand = new THREE.Mesh(minuteHandGeo, goldMat);
-    minuteHand.position.set(0, 0, 0.12);
-    minuteHand.rotation.z = -Math.PI / 4; // pointing to ~2 o'clock
+    // Minute Hand (Pointing to 10:10 pose: ~02:08)
+    const minuteHand = create3DDauphineHand(1.68, 0.18, 0.035);
+    minuteHand.position.set(0, 0, 0.035);
+    minuteHand.rotation.z = -Math.PI * 0.28;
 
-    // Blued Steel Second Hand (needle tip with counterweight ring)
+    // Blued Steel Sweep Second Hand
     const secondHandGroup = new THREE.Group();
-    const secondHandGeo = new THREE.BoxGeometry(0.02, 1.85, 0.02);
-    const secondHandMat = new THREE.MeshPhysicalMaterial({ color: 0x1d4ed8, metalness: 0.95, roughness: 0.15 });
-    const secondHand = new THREE.Mesh(secondHandGeo, secondHandMat);
-    secondHand.position.set(0, 0.55, 0);
+    const secondHandGeo = new THREE.BoxGeometry(0.024, 1.95, 0.025);
+    const secondHand = new THREE.Mesh(secondHandGeo, bluedSteelMat);
+    secondHand.position.set(0, 0.58, 0);
 
-    const counterweightGeo = new THREE.TorusGeometry(0.08, 0.02, 12, 24);
-    const counterweight = new THREE.Mesh(counterweightGeo, secondHandMat);
-    counterweight.position.set(0, -0.28, 0);
+    const counterweightGeo = new THREE.TorusGeometry(0.09, 0.022, 12, 24);
+    const counterweight = new THREE.Mesh(counterweightGeo, bluedSteelMat);
+    counterweight.position.set(0, -0.32, 0);
     secondHandGroup.add(secondHand, counterweight);
-    secondHandGroup.position.set(0, 0, 0.16);
+    secondHandGroup.position.set(0, 0, 0.055);
 
     // Domed Pinion Center Cap
     const centerCapGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.07, 32);
     const centerCap = new THREE.Mesh(centerCapGeo, goldMat);
     centerCap.rotation.x = -Math.PI / 2;
-    centerCap.position.z = 0.18;
+    centerCap.position.z = 0.065;
 
     handsGroup.add(hourHand, minuteHand, secondHandGroup, centerCap);
-    handsGroup.position.z = 0.22;
+    handsGroup.position.z = 0.09; // Just above dial
     master.add(handsGroup);
 
-    // 1.4 Dial Plate with 12 Applied 3D Metallic Baton Markers
+    // 1.4 Sunburst Emerald Dial Plate (Fills the face with zero gaps)
     const dialGroup = new THREE.Group();
 
-    // Base plate
-    const dialBaseGeo = new THREE.CylinderGeometry(2.0, 2.0, 0.04, 64);
-    const dialBaseMat = new THREE.MeshStandardMaterial({ color: 0x03140c, roughness: 0.4, metalness: 0.1 });
-    const dialBaseMesh = new THREE.Mesh(dialBaseGeo, dialBaseMat);
-    dialBaseMesh.rotation.x = -Math.PI / 2;
-    dialGroup.add(dialBaseMesh);
-
-    // Sunburst Emerald Front Face
-    const dialFaceGeo = new THREE.CircleGeometry(1.98, 64);
-    const dialMat = new THREE.MeshStandardMaterial({
+    // Sunburst Emerald Texture Face (High Horology Clearcoat Lacquer)
+    const dialFaceGeo = new THREE.CircleGeometry(2.04, 96);
+    const dialMat = new THREE.MeshPhysicalMaterial({
       map: createDialTexture(),
       roughness: 0.26,
-      metalness: 0.32,
+      metalness: 0.10,
+      clearcoat: 0.85,
+      clearcoatRoughness: 0.08,
       envMap: envMap,
-      envMapIntensity: 1.2
+      envMapIntensity: 0.65
     });
     const dialFaceMesh = new THREE.Mesh(dialFaceGeo, dialMat);
-    dialFaceMesh.position.z = 0.025;
+    dialFaceMesh.position.z = 0.02;
     dialGroup.add(dialFaceMesh);
 
-    // 12 Applied 3D Faceted Gold Batons (Standing off dial)
-    const markerRadius = 1.42;
-    for (let h = 0; h < 12; h++) {
-      const angle = (h * Math.PI) / 6 - Math.PI / 2;
+    // Rear disc for dial backplate
+    const dialBackGeo = new THREE.CircleGeometry(2.04, 64);
+    const dialBackMat = new THREE.MeshStandardMaterial({ color: 0x01140a, roughness: 0.4 });
+    const dialBackMesh = new THREE.Mesh(dialBackGeo, dialBackMat);
+    dialBackMesh.rotation.y = Math.PI;
+    dialBackMesh.position.z = -0.01;
+    dialGroup.add(dialBackMesh);
 
-      if (h === 0) {
-        // 12 o'clock: Double gold baton
-        const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.36, 0.04), goldMat);
-        const b2 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.36, 0.04), goldMat);
-        b1.position.set(cxOffset(-0.045, angle, markerRadius), cyOffset(-0.045, angle, markerRadius), 0.045);
-        b2.position.set(cxOffset(0.045, angle, markerRadius), cyOffset(0.045, angle, markerRadius), 0.045);
-        b1.rotation.z = angle + Math.PI / 2;
-        b2.rotation.z = angle + Math.PI / 2;
-        dialGroup.add(b1, b2);
-      } else if (h === 3) {
-        // 3 o'clock: next to date window
-        const b3 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.04), goldMat);
-        b3.position.set(Math.cos(angle) * (markerRadius + 0.1), Math.sin(angle) * (markerRadius + 0.1), 0.045);
-        b3.rotation.z = angle + Math.PI / 2;
-        dialGroup.add(b3);
-      } else {
-        // Standard faceted baton
-        const isQuarter = h === 6 || h === 9;
-        const batonGeo = new THREE.BoxGeometry(isQuarter ? 0.07 : 0.05, isQuarter ? 0.35 : 0.30, 0.04);
-        const baton = new THREE.Mesh(batonGeo, goldMat);
-        baton.position.set(Math.cos(angle) * markerRadius, Math.sin(angle) * markerRadius, 0.045);
-        baton.rotation.z = angle + Math.PI / 2;
-        dialGroup.add(baton);
-      }
-    }
-
-    function cxOffset(offset, angle, r) {
-      return Math.cos(angle) * r - Math.sin(angle) * offset;
-    }
-    function cyOffset(offset, angle, r) {
-      return Math.sin(angle) * r + Math.cos(angle) * offset;
-    }
-
-    dialGroup.position.z = 0.1;
+    dialGroup.position.z = 0.05; // Seated inside case
     master.add(dialGroup);
 
-    // 1.5 Calibre Movement (Rear Side -Z)
+    // 1.5 Calibre Mechanical Movement (Rear -Z)
     const movementGroup = new THREE.Group();
-    const plateGeo = new THREE.CylinderGeometry(1.92, 1.92, 0.10, 48);
+    const plateGeo = new THREE.CylinderGeometry(1.96, 1.96, 0.08, 48);
     const plateMesh = new THREE.Mesh(plateGeo, steelMat);
     plateMesh.rotation.x = -Math.PI / 2;
     movementGroup.add(plateMesh);
@@ -872,33 +986,33 @@
     // Brass Balance Wheel & Escapement
     const balanceWheelGeo = new THREE.TorusGeometry(0.48, 0.035, 16, 40);
     const balanceWheel = new THREE.Mesh(balanceWheelGeo, goldMat);
-    balanceWheel.position.set(-0.65, 0.45, -0.07);
+    balanceWheel.position.set(-0.65, 0.45, -0.05);
     movementGroup.add(balanceWheel);
 
     // Brass Gears
     const gear1Geo = new THREE.CylinderGeometry(0.38, 0.38, 0.035, 28);
     const gear1 = new THREE.Mesh(gear1Geo, brushedGoldMat);
     gear1.rotation.x = -Math.PI / 2;
-    gear1.position.set(0.4, 0.3, -0.07);
+    gear1.position.set(0.4, 0.3, -0.05);
     movementGroup.add(gear1);
 
     // Ruby Bearing Jewels
     for (let j = 0; j < 5; j++) {
       const jewel = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.03, 16), rubyJewelMat);
       jewel.rotation.x = -Math.PI / 2;
-      jewel.position.set(Math.cos(j * 1.25) * 0.85, Math.sin(j * 1.25) * 0.85, -0.08);
+      jewel.position.set(Math.cos(j * 1.25) * 0.85, Math.sin(j * 1.25) * 0.85, -0.06);
       movementGroup.add(jewel);
     }
-    movementGroup.position.z = -0.22;
+    movementGroup.position.z = -0.06;
     master.add(movementGroup);
 
     // 1.6 Oscillating Geneva Rotor (Rear Side)
     const rotorGroup = new THREE.Group();
     const rotorShape = new THREE.Shape();
-    rotorShape.absarc(0, 0, 1.82, 0, Math.PI, false);
+    rotorShape.absarc(0, 0, 1.84, 0, Math.PI, false);
     rotorShape.lineTo(0, 0);
     const rotorGeo = new THREE.ExtrudeGeometry(rotorShape, {
-      depth: 0.07,
+      depth: 0.06,
       bevelEnabled: true,
       bevelSegments: 2,
       bevelSize: 0.02,
@@ -906,39 +1020,38 @@
     });
     const rotorMat = new THREE.MeshStandardMaterial({
       map: createGenevaStripesTexture(),
-      roughness: 0.28,
-      metalness: 0.85,
+      roughness: 0.25,
+      metalness: 0.90,
       envMap: envMap
     });
     const rotorMesh = new THREE.Mesh(rotorGeo, rotorMat);
     rotorGroup.add(rotorMesh);
-    rotorGroup.position.z = -0.42;
+    rotorGroup.position.z = -0.10;
     master.add(rotorGroup);
 
-    // 1.7 Casing, Downward-Sloping Lugs, Knurled Crown
+    // 1.7 Solid Champagne Gold Case, Sculpted Downward Lugs, Winding Crown
     const caseGroup = new THREE.Group();
 
-    // Hollow open-ended case ring
-    const caseGeo = new THREE.CylinderGeometry(2.18, 2.18, 0.40, 64, 1, true);
+    // Solid case body ring (openEnded = true so top lid does not occlude dial)
+    const caseGeo = new THREE.CylinderGeometry(2.20, 2.20, 0.32, 64, 1, true);
     const caseMesh = new THREE.Mesh(caseGeo, goldMat);
     caseMesh.rotation.x = -Math.PI / 2;
     caseGroup.add(caseMesh);
 
-    // Rear exhibition backplate
-    const backplateGeo = new THREE.CircleGeometry(2.16, 64);
+    // Rear exhibition rim
+    const backplateGeo = new THREE.CircleGeometry(2.18, 64);
     const backplateMesh = new THREE.Mesh(backplateGeo, brushedGoldMat);
     backplateMesh.rotation.y = Math.PI;
-    backplateMesh.position.z = -0.20;
+    backplateMesh.position.z = -0.16;
     caseGroup.add(backplateMesh);
 
     // 4 Sculpted Downward-Curved Lugs with Polished Chamfers
     function createSculptedLug(xSign, ySign) {
       const lugG = new THREE.Group();
-      const lugGeo = new THREE.BoxGeometry(0.22, 0.82, 0.26);
+      const lugGeo = new THREE.BoxGeometry(0.24, 0.88, 0.28);
       const lug = new THREE.Mesh(lugGeo, goldMat);
-      lug.position.set(xSign * 0.98, ySign * 2.05, -0.05);
-      // Slope lug downward toward the rear
-      lug.rotation.x = -ySign * 0.22;
+      lug.position.set(xSign * 1.05, ySign * 2.12, -0.06);
+      lug.rotation.x = -ySign * 0.28;
       lugG.add(lug);
       return lugG;
     }
@@ -948,73 +1061,73 @@
     caseGroup.add(createSculptedLug(1, -1));
     caseGroup.add(createSculptedLug(-1, -1));
 
-    // Polished Steel Spring Bars between Lugs
-    const springBarTop = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.82, 16), steelMat);
+    // Spring Bars
+    const springBarTop = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.86, 16), steelMat);
     springBarTop.rotation.z = Math.PI / 2;
     springBarTop.position.set(0, 1.95, -0.05);
 
-    const springBarBottom = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.82, 16), steelMat);
+    const springBarBottom = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.86, 16), steelMat);
     springBarBottom.rotation.z = Math.PI / 2;
     springBarBottom.position.set(0, -1.95, -0.05);
     caseGroup.add(springBarTop, springBarBottom);
 
-    // Knurled Winding Crown at 3 o'clock
-    const crownGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.32, 28);
+    // Knurled Winding Crown at 3 o'clock with Polished Emerald Cabochon
+    const crownGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.35, 32);
     const crownMesh = new THREE.Mesh(crownGeo, brushedGoldMat);
     crownMesh.rotation.z = Math.PI / 2;
-    crownMesh.position.set(2.32, 0, 0);
+    crownMesh.position.set(2.36, 0, 0);
 
     const cabochon = new THREE.Mesh(
-      new THREE.SphereGeometry(0.12, 16, 16),
-      new THREE.MeshPhysicalMaterial({ color: 0x052e22, roughness: 0.1, clearcoat: 1.0 })
+      new THREE.SphereGeometry(0.14, 20, 20),
+      new THREE.MeshPhysicalMaterial({ color: 0x073b2c, roughness: 0.05, clearcoat: 1.0, envMap: envMap })
     );
-    cabochon.position.set(2.5, 0, 0);
+    cabochon.position.set(2.54, 0, 0);
     caseGroup.add(crownMesh, cabochon);
     caseGroup.position.z = 0;
     master.add(caseGroup);
 
     // 1.8 Caseback Ring
     const casebackGroup = new THREE.Group();
-    const casebackGeo = new THREE.TorusGeometry(2.08, 0.12, 20, 64);
+    const casebackGeo = new THREE.TorusGeometry(2.10, 0.10, 20, 64);
     const casebackMesh = new THREE.Mesh(casebackGeo, goldMat);
     casebackGroup.add(casebackMesh);
-    casebackGroup.position.z = -0.58;
+    casebackGroup.position.z = -0.16;
     master.add(casebackGroup);
 
     // 1.9 Curved Stitched Italian Leather Straps & Tang Buckle
     const strapTopGroup = new THREE.Group();
-    const strapTopGeo = createCurvedStrapBoxGeometry(1.72, 3.2, 0.12, true);
+    const strapTopGeo = createCurvedStrapBoxGeometry(1.74, 3.2, 0.12, true);
     const strapTop = new THREE.Mesh(strapTopGeo, topStrapMat);
-    strapTop.position.set(0, 3.5, 0);
+    strapTop.position.set(0, 3.3, 0);
     strapTopGroup.add(strapTop);
     master.add(strapTopGroup);
 
     const strapBottomGroup = new THREE.Group();
-    const strapBottomGeo = createCurvedStrapBoxGeometry(1.72, 3.6, 0.12, false);
+    const strapBottomGeo = createCurvedStrapBoxGeometry(1.74, 3.5, 0.12, false);
     const strapBottom = new THREE.Mesh(strapBottomGeo, bottomStrapMat);
-    strapBottom.position.set(0, -3.7, 0);
+    strapBottom.position.set(0, -3.5, 0);
     strapBottomGroup.add(strapBottom);
 
-    // Leather Keeper Loops (Floating & Fixed)
-    const keeperGeo = new THREE.TorusGeometry(0.92, 0.06, 12, 32);
+    // Fitted Leather Keeper Loops
+    const keeperGeo = new THREE.TorusGeometry(0.92, 0.055, 12, 32);
     const keeper1 = new THREE.Mesh(keeperGeo, bottomStrapMat);
     keeper1.scale.set(1.0, 0.25, 1.0);
-    keeper1.position.set(0, -2.6, -0.15);
+    keeper1.position.set(0, -2.5, -0.12);
 
     const keeper2 = new THREE.Mesh(keeperGeo, bottomStrapMat);
     keeper2.scale.set(1.0, 0.25, 1.0);
-    keeper2.position.set(0, -3.1, -0.32);
+    keeper2.position.set(0, -3.0, -0.28);
     strapBottomGroup.add(keeper1, keeper2);
 
-    // Polished Champagne Gold Tang Buckle & Pin
+    // Polished Champagne Gold Tang Buckle
     const buckleFrameGeo = new THREE.TorusGeometry(0.96, 0.08, 16, 32);
     const buckleFrame = new THREE.Mesh(buckleFrameGeo, goldMat);
     buckleFrame.scale.set(1.05, 0.35, 1.0);
-    buckleFrame.position.set(0, -5.35, -1.18);
+    buckleFrame.position.set(0, -5.1, -1.1);
 
     const bucklePinGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.65, 16);
     const bucklePin = new THREE.Mesh(bucklePinGeo, goldMat);
-    bucklePin.position.set(0, -5.35, -1.15);
+    bucklePin.position.set(0, -5.1, -1.08);
     strapBottomGroup.add(buckleFrame, bucklePin);
     master.add(strapBottomGroup);
 
@@ -1034,7 +1147,6 @@
       rotorMesh
     };
 
-    // Scale so the full watch, case, lugs, stitched straps, and buckle fit gracefully
     master.scale.set(0.66, 0.66, 0.66);
     return master;
   }
@@ -1492,7 +1604,7 @@
       renderer.outputColorSpace = THREE.SRGBColorSpace;
     }
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
+    renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -1501,25 +1613,29 @@
     scene.environment = studioEnvMap;
 
     // Studio Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
     scene.add(ambientLight);
 
-    keyLight = new THREE.DirectionalLight(0xfff8ee, 2.6);
+    keyLight = new THREE.DirectionalLight(0xfff8ee, 1.85);
     keyLight.position.set(5, 7, 6);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 1024;
     keyLight.shadow.mapSize.height = 1024;
     scene.add(keyLight);
 
-    fillLight = new THREE.DirectionalLight(0xddeeff, 1.2);
+    fillLight = new THREE.DirectionalLight(0xddeeff, 0.75);
     fillLight.position.set(-6, 3, 4);
     scene.add(fillLight);
 
-    goldRimLight = new THREE.PointLight(0xe6c875, 4.0, 25);
+    goldRimLight = new THREE.PointLight(0xe6c875, 2.5, 20);
     goldRimLight.position.set(3, -2, -4);
     scene.add(goldRimLight);
 
-    bottleLight = new THREE.PointLight(0xffb03a, 2.4, 15);
+    const glintLight = new THREE.PointLight(0xffffff, 0.8, 15);
+    glintLight.position.set(1.5, 2.5, 5.0);
+    scene.add(glintLight);
+
+    bottleLight = new THREE.PointLight(0xffb03a, 0, 15);
     bottleLight.position.set(0, 2, 3);
     scene.add(bottleLight);
 
@@ -1541,6 +1657,8 @@
     models.watch = buildWatchModel(studioEnvMap);
     models.headphones = buildHeadphonesModel(studioEnvMap);
     models.perfume = buildPerfumeModel(studioEnvMap);
+    window.__watchParts = watchParts;
+    window.__models = models;
 
     scene.add(models.watch);
     scene.add(models.headphones);
@@ -1584,11 +1702,12 @@
     });
 
     // Reset rotation & explode states on model change
-    targetRotation = { x: 0.12, y: 0.2 };
+    targetRotation = { x: 0.18, y: -0.22 };
     if (isExploded) {
       isExploded = false;
       updateComponentExplosion(0);
     }
+    if (bottleLight) bottleLight.intensity = (activeModelKey === 'perfume') ? 2.4 : 0;
     updateExplodeButtonUI();
     renderProductSpecsCard();
   }
@@ -1600,17 +1719,17 @@
   function updateComponentExplosion(progress) {
     explodeProgress = progress;
 
-    // 1. Watch Component Separation
+    // 1. Watch Component Separation (Starts 100% flush at progress 0, expands smoothly on demand)
     if (watchParts.crystalGroup) {
-      watchParts.crystalGroup.position.z = 0.42 + progress * 1.65;
-      watchParts.bezelGroup.position.z = 0.32 + progress * 1.15;
-      watchParts.handsGroup.position.z = 0.22 + progress * 0.72;
-      watchParts.dialGroup.position.z = 0.10 + progress * 0.30;
-      watchParts.movementGroup.position.z = -0.22 - progress * 0.85;
-      watchParts.rotorGroup.position.z = -0.42 - progress * 1.45;
-      watchParts.casebackGroup.position.z = -0.58 - progress * 1.95;
-      watchParts.strapTopGroup.position.y = 3.5 + progress * 0.85;
-      watchParts.strapBottomGroup.position.y = -3.7 - progress * 0.85;
+      watchParts.crystalGroup.position.z = 0.16 + progress * 2.2;
+      watchParts.bezelGroup.position.z = 0.14 + progress * 1.5;
+      watchParts.handsGroup.position.z = 0.09 + progress * 0.9;
+      watchParts.dialGroup.position.z = 0.05 + progress * 0.4;
+      watchParts.movementGroup.position.z = -0.06 - progress * 1.0;
+      watchParts.rotorGroup.position.z = -0.10 - progress * 1.6;
+      watchParts.casebackGroup.position.z = -0.16 - progress * 2.2;
+      watchParts.strapTopGroup.position.y = 3.3 + progress * 0.85;
+      watchParts.strapBottomGroup.position.y = -3.5 - progress * 0.85;
     }
 
     // 2. Headphones Component Separation
@@ -1765,7 +1884,7 @@
   }
 
   function resetView() {
-    targetRotation = { x: 0.12, y: 0.2 };
+    targetRotation = { x: 0.18, y: -0.22 };
     targetCameraDistance = activeModelKey === 'watch' ? 8.2 : activeModelKey === 'headphones' ? 7.8 : 7.5;
     if (isExploded) toggleExplode();
   }
@@ -2011,7 +2130,12 @@
   }
 
   function init(containerSelector) {
-    const container = document.querySelector(containerSelector || '#atelier-canvas-wrapper');
+    let container;
+    if (containerSelector && typeof containerSelector !== 'string') {
+      container = containerSelector;
+    } else {
+      container = document.querySelector(containerSelector || '#atelier-canvas-wrapper');
+    }
     if (!container) return;
 
     if (!isWebGLAvailable()) {

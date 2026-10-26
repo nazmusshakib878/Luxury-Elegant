@@ -1,6 +1,6 @@
 # Luxury & Elegant — Interactive 3D E-Commerce Platform
 
-A production-ready luxury e-commerce platform built with **Node.js, Express, SQLite (better-sqlite3)**, featuring interactive procedural **Three.js & WebGL 3D Product Showcases**, **GSAP ScrollTrigger** scroll-responsive animations, and a responsive luxury storefront.
+A production-ready luxury e-commerce platform built with **Next.js 16 (App Router), React 19, Node.js, SQLite (better-sqlite3) & PostgreSQL**, featuring interactive procedural **Three.js & WebGL 3D Product Showcases**, **GSAP ScrollTrigger** scroll-responsive animations, and a responsive luxury storefront.
 
 ---
 

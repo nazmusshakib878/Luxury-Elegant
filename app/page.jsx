@@ -1,0 +1,1468 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Navbar from './components/Navbar';
+import ProductAtelier3D from './components/ProductAtelier3D';
+import CategoryShowcase from './components/CategoryShowcase';
+import FlagshipCinematicShowcase from './components/FlagshipCinematicShowcase';
+import { useCart } from './context/CartContext';
+
+export default function HomePage() {
+  const { addToCart, wishlist, toggleWishlist, setIsDrawerOpen } = useCart();
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCat, setSelectedCat] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('default');
+  const [saleOnly, setSaleOnly] = useState(false);
+
+  // New interactive states
+  const [quickViewProduct, setQuickViewProduct] = useState(null);
+  const [quickViewQty, setQuickViewQty] = useState(1);
+  const [addedId, setAddedId] = useState(null);
+  const [openFaq, setOpenFaq] = useState(0);
+  const [vipEmail, setVipEmail] = useState('');
+  const [vipJoined, setVipJoined] = useState(false);
+
+  // Fetch products and categories on mount or when filter changes
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const catRes = await fetch('/api/categories');
+        if (catRes.ok) {
+          const cats = await catRes.json();
+          setCategories(cats);
+        }
+
+        const params = new URLSearchParams();
+        if (selectedCat !== 'all') params.set('cat', selectedCat);
+        if (searchQuery.trim()) params.set('q', searchQuery.trim());
+        if (sortBy === 'price_asc') params.set('sort', 'price_asc');
+        if (sortBy === 'price_desc') params.set('sort', 'price_desc');
+        if (sortBy === 'rating') params.set('sort', 'rating');
+        if (saleOnly) params.set('sale', '1');
+
+        const prodRes = await fetch(`/api/products?${params.toString()}`);
+        if (prodRes.ok) {
+          const prods = await prodRes.json();
+          setProducts(prods);
+        }
+      } catch (err) {
+        console.error('Failed to load store data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [selectedCat, searchQuery, sortBy, saleOnly]);
+
+  return (
+    <>
+      <Navbar onSearch={(q) => setSearchQuery(q)} />
+
+      <main style={{ maxWidth: '80rem', margin: '0 auto', padding: '1.5rem 1.25rem' }}>
+        {/* 1. Large Elegant Hero Section (Exact Original Design) */}
+        <section
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '2.5rem',
+            background: 'linear-gradient(135deg, #0c3125 0%, #0f3d2e 50%, #08231a 100%)',
+            padding: '3rem 2.5rem',
+            color: '#ffffff',
+            boxShadow: '0 25px 60px -15px rgba(12, 49, 37, 0.45)',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+          }}
+        >
+          {/* Ambient Background Glow Accents */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '-6rem',
+              right: '-6rem',
+              width: '24rem',
+              height: '24rem',
+              borderRadius: '9999px',
+              backgroundColor: 'rgba(200, 162, 74, 0.15)',
+              filter: 'blur(100px)',
+              pointerEvents: 'none',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '-6rem',
+              left: '-6rem',
+              width: '20rem',
+              height: '20rem',
+              borderRadius: '9999px',
+              backgroundColor: 'rgba(52, 211, 153, 0.1)',
+              filter: 'blur(90px)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 10,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '2.5rem',
+              alignItems: 'center',
+            }}
+          >
+            {/* Left Content */}
+            <div style={{ maxWidth: '42rem' }}>
+              {/* Exclusive Curation Pill */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  borderRadius: '9999px',
+                  border: '1px solid rgba(200, 162, 74, 0.4)',
+                  backgroundColor: 'rgba(200, 162, 74, 0.1)',
+                  padding: '0.4rem 1rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: '#c8a24a',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  backdropFilter: 'blur(8px)',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: '0.5rem',
+                    height: '0.5rem',
+                    borderRadius: '9999px',
+                    backgroundColor: '#c8a24a',
+                  }}
+                />
+                <span>Exclusive 2026 Collection</span>
+              </div>
+
+              {/* Bold Luxury Headline */}
+              <h1
+                className="font-serif"
+                style={{
+                  fontSize: 'clamp(2.4rem, 5vw, 3.8rem)',
+                  lineHeight: 1.12,
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  letterSpacing: '-0.02em',
+                  margin: 0,
+                }}
+              >
+                Timeless Elegance, <br />
+                <span
+                  style={{
+                    fontStyle: 'italic',
+                    fontWeight: 400,
+                    color: '#c8a24a',
+                  }}
+                  className="shimmer-text"
+                >
+                  Curated
+                </span>{' '}
+                for Everyday Luxury.
+              </h1>
+
+              {/* Subtitle */}
+              <p
+                style={{
+                  marginTop: '1.25rem',
+                  color: '#e7e5e4',
+                  fontSize: '1.05rem',
+                  lineHeight: 1.7,
+                  fontWeight: 300,
+                }}
+              >
+                Discover handpicked designer apparel, high-fidelity acoustics, artisanal living decor, and radiance skincare — tailored for discerning lifestyles across Bangladesh.
+              </p>
+
+              {/* CTA Buttons: Shop Now and Explore Collection */}
+              <div style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                <a
+                  href="#shop"
+                  className="btn btn-gold"
+                  style={{
+                    padding: '0.9rem 2rem',
+                    fontSize: '1rem',
+                    boxShadow: '0 10px 25px rgba(200, 162, 74, 0.4)',
+                  }}
+                >
+                  <span>Shop Now</span>
+                  <span style={{ fontSize: '1.2rem', marginLeft: '0.3rem' }}>→</span>
+                </a>
+                <a
+                  href="#interactive-atelier-3d"
+                  className="btn btn-outline-white"
+                  style={{ padding: '0.9rem 1.75rem', fontSize: '1rem' }}
+                >
+                  Explore Collection
+                </a>
+              </div>
+
+              {/* Verified Service Guarantees (10K+ / 4.9 ★ / 100%) */}
+              <div
+                style={{
+                  marginTop: '2.5rem',
+                  paddingTop: '2rem',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '1.5rem',
+                  maxWidth: '32rem',
+                }}
+              >
+                <div>
+                  <p className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                    10K+
+                  </p>
+                  <p style={{ fontSize: '0.8rem', color: '#d6d3d1', marginTop: '0.2rem', margin: 0 }}>
+                    Discerning Patrons
+                  </p>
+                </div>
+                <div>
+                  <p className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, color: '#c8a24a', margin: 0 }}>
+                    4.9 ★
+                  </p>
+                  <p style={{ fontSize: '0.8rem', color: '#d6d3d1', marginTop: '0.2rem', margin: 0 }}>
+                    Customer Rating
+                  </p>
+                </div>
+                <div>
+                  <p className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
+                    100%
+                  </p>
+                  <p style={{ fontSize: '0.8rem', color: '#d6d3d1', marginTop: '0.2rem', margin: 0 }}>
+                    Genuine Guarantee
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: High-Quality Static Visual Showcase Frame */}
+            <div style={{ position: 'relative', width: '100%', maxWidth: '30rem', margin: '0 auto' }}>
+              {/* Backlight Glow */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: '-0.4rem',
+                  borderRadius: '2.5rem',
+                  background: 'linear-gradient(90deg, rgba(200, 162, 74, 0.3) 0%, rgba(52, 211, 153, 0.2) 50%, rgba(200, 162, 74, 0.25) 100%)',
+                  filter: 'blur(20px)',
+                  opacity: 0.8,
+                  pointerEvents: 'none',
+                }}
+              />
+
+              {/* Image Frame */}
+              <div
+                style={{
+                  position: 'relative',
+                  aspectRatio: '4 / 3',
+                  width: '100%',
+                  overflow: 'hidden',
+                  borderRadius: '1.75rem',
+                  border: '2px solid rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.65)',
+                  backgroundColor: '#000000',
+                }}
+              >
+                <img
+                  src="/images/hero.jpg"
+                  alt="Curated Luxury Masterpieces"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+                {/* Dark Vignette Overlay */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0.1) 100%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                {/* Floating Top Editorial Tag */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '1rem',
+                    left: '1rem',
+                    zIndex: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    borderRadius: '9999px',
+                    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                    backdropFilter: 'blur(10px)',
+                    padding: '0.35rem 0.9rem',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: '#c8a24a',
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: '0.45rem',
+                      height: '0.45rem',
+                      borderRadius: '9999px',
+                      backgroundColor: '#c8a24a',
+                    }}
+                  />
+                  <span>✦ 2026 EDITORIAL</span>
+                </div>
+
+                {/* Floating Bottom Caption Banner */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: '1rem',
+                    left: '1rem',
+                    right: '1rem',
+                    zIndex: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.85rem 1rem',
+                    borderRadius: '1rem',
+                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                    backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#c8a24a' }}>
+                      FEATURED HERITAGE
+                    </p>
+                    <h4 className="font-serif" style={{ margin: '0.15rem 0 0', fontSize: '0.95rem', fontWeight: 700, color: '#ffffff' }}>
+                      Geneva Chronometers &amp; Apparel
+                    </h4>
+                  </div>
+                  <a
+                    href="#interactive-atelier-3d"
+                    className="btn btn-gold"
+                    style={{ padding: '0.4rem 0.9rem', fontSize: '0.75rem', fontWeight: 700 }}
+                  >
+                    Explore →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 2. Curated Category Showcase (Fashion, Electronics, Home & Living, Beauty) */}
+        <CategoryShowcase onSelectCategory={(catId) => setSelectedCat(catId)} />
+
+        {/* 3. Flagship Creation Cinematic Showcase (Aura Pro Studio Wireless Titanium Headphones) */}
+        <FlagshipCinematicShowcase />
+
+        {/* 4. Trust Badges Strip (4 Columns) */}
+        <section
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '1rem',
+            margin: '2rem 0',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '1.25rem',
+              padding: '1.25rem',
+              border: '1px solid #e7e5e4',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '1rem',
+            }}
+          >
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '2.75rem',
+                height: '2.75rem',
+                borderRadius: '0.75rem',
+                backgroundColor: 'rgba(15, 61, 46, 0.1)',
+                fontSize: '1.3rem',
+                flexShrink: 0,
+              }}
+            >
+              🚚
+            </span>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>Express Delivery</h4>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#78716c', lineHeight: 1.4 }}>
+                Fast &amp; secure shipping across all 64 districts
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '1.25rem',
+              padding: '1.25rem',
+              border: '1px solid #e7e5e4',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '1rem',
+            }}
+          >
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '2.75rem',
+                height: '2.75rem',
+                borderRadius: '0.75rem',
+                backgroundColor: 'rgba(200, 162, 74, 0.12)',
+                fontSize: '1.3rem',
+                flexShrink: 0,
+              }}
+            >
+              🛡️
+            </span>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>100% Authentic</h4>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#78716c', lineHeight: 1.4 }}>
+                Directly sourced premium craftsmanship
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '1.25rem',
+              padding: '1.25rem',
+              border: '1px solid #e7e5e4',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '1rem',
+            }}
+          >
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '2.75rem',
+                height: '2.75rem',
+                borderRadius: '0.75rem',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                fontSize: '1.3rem',
+                flexShrink: 0,
+              }}
+            >
+              💵
+            </span>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>Cash on Delivery</h4>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#78716c', lineHeight: 1.4 }}>
+                Inspect package before paying at doorstep
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '1.25rem',
+              padding: '1.25rem',
+              border: '1px solid #e7e5e4',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '1rem',
+            }}
+          >
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '2.75rem',
+                height: '2.75rem',
+                borderRadius: '0.75rem',
+                backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                fontSize: '1.3rem',
+                flexShrink: 0,
+              }}
+            >
+              🔄
+            </span>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>7-Day Easy Returns</h4>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#78716c', lineHeight: 1.4 }}>
+                Hassle-free exchanges &amp; dedicated support
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. Interactive 3D Product Atelier (Watch, Headphones, Radiance Serum) */}
+        <ProductAtelier3D />
+
+        {/* 4. Product Catalog Section */}
+        <section id="shop" style={{ marginTop: '4rem' }}>
+          {/* Section Header */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-end',
+              marginBottom: '1.5rem',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            <div>
+              <span
+                style={{
+                  color: '#0f3d2e',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                Curated Showcase
+              </span>
+              <h2
+                className="font-serif"
+                style={{
+                  margin: '0.25rem 0 0',
+                  fontSize: '2rem',
+                  fontWeight: 700,
+                  color: '#1c1917',
+                }}
+              >
+                Our Exclusive Collection
+              </h2>
+            </div>
+
+            {/* Sorting & Filter Actions */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  backgroundColor: '#ffffff',
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '9999px',
+                  border: '1px solid #d6d3d1',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={saleOnly}
+                  onChange={(e) => setSaleOnly(e.target.checked)}
+                />
+                <span>Sale Items Only</span>
+              </label>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{
+                  padding: '0.45rem 1rem',
+                  borderRadius: '9999px',
+                  border: '1px solid #d6d3d1',
+                  backgroundColor: '#ffffff',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="default">Sort by: Featured</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="rating">Top Rated</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Category Filter Pills */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.5rem',
+              overflowX: 'auto',
+              paddingBottom: '0.75rem',
+              marginBottom: '2rem',
+            }}
+          >
+            <button
+              onClick={() => setSelectedCat('all')}
+              className={`pill ${selectedCat === 'all' ? 'on' : ''}`}
+            >
+              All Masterpieces
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCat(String(cat.id))}
+                className={`pill ${selectedCat === String(cat.id) ? 'on' : ''}`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Product Grid */}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#78716c' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+              <div>Retrieving boutique collection…</div>
+            </div>
+          ) : products.length === 0 ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '4rem 1rem',
+                backgroundColor: '#ffffff',
+                borderRadius: '1.5rem',
+                border: '1px solid #e7e5e4',
+              }}
+            >
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔍</div>
+              <h3 className="font-serif" style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>
+                No products found
+              </h3>
+              <p style={{ color: '#78716c', fontSize: '0.9rem' }}>
+                Try adjusting your search query or category filters.
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                gap: '1.5rem',
+              }}
+            >
+              {products.map((p) => {
+                const isWishlisted = wishlist.some((w) => w.id === p.id);
+                const isRecentlyAdded = addedId === p.id;
+                return (
+                  <div key={p.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                    {/* Image Container with Badges */}
+                    <div
+                      style={{
+                        position: 'relative',
+                        paddingTop: '85%',
+                        overflow: 'hidden',
+                        backgroundColor: '#f5f5f4',
+                      }}
+                    >
+                      <img
+                        src={p.image || '/images/default.jpg'}
+                        alt={p.name}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          transition: 'transform 0.5s ease',
+                        }}
+                      />
+
+                      {/* On Sale Badge */}
+                      {p.on_sale && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '0.75rem',
+                            left: '0.75rem',
+                            backgroundColor: '#0f3d2e',
+                            color: '#ffffff',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            padding: '0.25rem 0.6rem',
+                            borderRadius: '9999px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+                            border: '1px solid rgba(200, 162, 74, 0.4)',
+                          }}
+                        >
+                          SALE
+                        </span>
+                      )}
+
+                      {/* Wishlist Heart Button */}
+                      <button
+                        onClick={() => toggleWishlist(p)}
+                        style={{
+                          position: 'absolute',
+                          top: '0.75rem',
+                          right: '0.75rem',
+                          width: '2.2rem',
+                          height: '2.2rem',
+                          borderRadius: '9999px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                          backdropFilter: 'blur(8px)',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: isWishlisted ? '#e11d48' : '#78716c',
+                          fontSize: '1rem',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          transition: 'transform 0.2s ease',
+                        }}
+                        title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                      >
+                        {isWishlisted ? '♥' : '♡'}
+                      </button>
+
+                      {/* Quick View Button on Image */}
+                      <button
+                        onClick={() => {
+                          setQuickViewProduct(p);
+                          setQuickViewQty(1);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          bottom: '0.75rem',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          backgroundColor: 'rgba(15, 61, 46, 0.92)',
+                          color: '#ffffff',
+                          border: '1px solid rgba(200, 162, 74, 0.6)',
+                          backdropFilter: 'blur(8px)',
+                          borderRadius: '9999px',
+                          padding: '0.35rem 0.85rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          whiteSpace: 'nowrap',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <span>👁️</span> Quick View
+                      </button>
+                    </div>
+
+                    {/* Product Details */}
+                    <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '0.35rem',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            color: '#c8a24a',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                          }}
+                        >
+                          {p.cat || 'Artisanal'}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '9999px', backgroundColor: '#16a34a' }}></span>
+                          In Stock
+                        </span>
+                      </div>
+
+                      <Link
+                        href={`/products/${p.id}`}
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '1.05rem',
+                          color: '#1c1917',
+                          textDecoration: 'none',
+                          marginBottom: '0.4rem',
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {p.name}
+                      </Link>
+
+                      {/* Rating */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          marginBottom: '0.75rem',
+                          fontSize: '0.82rem',
+                        }}
+                      >
+                        <span style={{ color: '#c8a24a' }}>★</span>
+                        <span style={{ fontWeight: 600, color: '#1c1917' }}>{p.rating || '4.9'}</span>
+                        <span style={{ color: '#a8a29e' }}>({p.reviews || 12} reviews)</span>
+                      </div>
+
+                      {/* Price & Action */}
+                      <div
+                        style={{
+                          marginTop: 'auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          paddingTop: '0.75rem',
+                          borderTop: '1px solid #f5f5f4',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f3d2e' }}>
+                            ৳{(p.price_now || p.price).toLocaleString()}
+                          </div>
+                          {p.on_sale && (
+                            <div style={{ fontSize: '0.8rem', color: '#a8a29e', textDecoration: 'line-through' }}>
+                              ৳{p.price.toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            addToCart(p);
+                            setAddedId(p.id);
+                            setTimeout(() => setAddedId(null), 1200);
+                          }}
+                          className="btn btn-p"
+                          style={{
+                            padding: '0.55rem 1.1rem',
+                            fontSize: '0.85rem',
+                            backgroundColor: isRecentlyAdded ? '#15803d' : '#0f3d2e',
+                            borderColor: isRecentlyAdded ? '#22c55e' : 'transparent',
+                            transition: 'all 0.25s ease',
+                          }}
+                        >
+                          {isRecentlyAdded ? '✓ Added' : '+ Add'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* 5. Patron Testimonials & Press Accolades */}
+        <section style={{ marginTop: '5rem', padding: '3rem 2rem', backgroundColor: '#ffffff', borderRadius: '2rem', border: '1px solid #e7e5e4', boxShadow: '0 15px 35px rgba(0,0,0,0.03)' }}>
+          <div style={{ textAlign: 'center', maxWidth: '36rem', margin: '0 auto 3rem' }}>
+            <span style={{ color: '#c8a24a', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+              ✦ Authentic Patron Accolades
+            </span>
+            <h2 className="font-serif" style={{ fontSize: '2.2rem', fontWeight: 700, color: '#1c1917', margin: '0.5rem 0' }}>
+              Voices of Distinction
+            </h2>
+            <p style={{ color: '#78716c', fontSize: '0.95rem', margin: 0, lineHeight: 1.6 }}>
+              Read verified impressions from our patrons across Dhaka, Chittagong, and Sylhet.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.75rem' }}>
+            <div style={{ padding: '1.75rem', backgroundColor: '#faf7f2', borderRadius: '1.5rem', border: '1px solid #e7e5e4', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ color: '#c8a24a', fontSize: '1.1rem', marginBottom: '0.75rem' }}>★★★★★</div>
+              <p style={{ color: '#292524', fontSize: '0.95rem', lineHeight: 1.7, fontStyle: 'italic', margin: 0, flex: 1 }}>
+                &ldquo;The Geneva Tourbillon arrived in a bespoke velvet-lined wooden presentation box within 24 hours in Gulshan. The mechanical sweep and 18K finish rival Swiss horology.&rdquo;
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e7e5e4' }}>
+                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '9999px', backgroundColor: '#0f3d2e', color: '#c8a24a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.95rem' }}>
+                  TR
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1c1917' }}>Tahmid Al-Rashid</div>
+                  <div style={{ fontSize: '0.75rem', color: '#78716c' }}>Gulshan 2, Dhaka · Verified Patron</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '1.75rem', backgroundColor: '#faf7f2', borderRadius: '1.5rem', border: '1px solid #e7e5e4', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ color: '#c8a24a', fontSize: '1.1rem', marginBottom: '0.75rem' }}>★★★★★</div>
+              <p style={{ color: '#292524', fontSize: '0.95rem', lineHeight: 1.7, fontStyle: 'italic', margin: 0, flex: 1 }}>
+                &ldquo;The Aura Pro Studio Wireless Headphones deliver acoustic clarity and active noise cancellation on par with leading studio monitors. Paying via Cash on Delivery made the process effortless.&rdquo;
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e7e5e4' }}>
+                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '9999px', backgroundColor: '#0f3d2e', color: '#c8a24a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.95rem' }}>
+                  NJ
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1c1917' }}>Nusrat Jahan</div>
+                  <div style={{ fontSize: '0.75rem', color: '#78716c' }}>Banani, Dhaka · Studio Sound Producer</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '1.75rem', backgroundColor: '#faf7f2', borderRadius: '1.5rem', border: '1px solid #e7e5e4', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ color: '#c8a24a', fontSize: '1.1rem', marginBottom: '0.75rem' }}>★★★★★</div>
+              <p style={{ color: '#292524', fontSize: '0.95rem', lineHeight: 1.7, fontStyle: 'italic', margin: 0, flex: 1 }}>
+                &ldquo;Exceptional white-glove packaging. Being able to inspect the package at my doorstep before finalizing payment gave me absolute peace of mind. Truly the highest standard in Bangladesh.&rdquo;
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e7e5e4' }}>
+                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '9999px', backgroundColor: '#0f3d2e', color: '#c8a24a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.95rem' }}>
+                  FZ
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1c1917' }}>Farhan Zahed</div>
+                  <div style={{ fontSize: '0.75rem', color: '#78716c' }}>Dhanmondi, Dhaka · Verified Patron</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 6. Atelier FAQ Accordion */}
+        <section style={{ marginTop: '5rem', padding: '3rem 2rem', backgroundColor: '#ffffff', borderRadius: '2rem', border: '1px solid #e7e5e4' }}>
+          <div style={{ textAlign: 'center', maxWidth: '36rem', margin: '0 auto 3rem' }}>
+            <span style={{ color: '#c8a24a', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+              ✦ Concierge Knowledge
+            </span>
+            <h2 className="font-serif" style={{ fontSize: '2.2rem', fontWeight: 700, color: '#1c1917', margin: '0.5rem 0' }}>
+              Frequently Asked Questions
+            </h2>
+            <p style={{ color: '#78716c', fontSize: '0.95rem', margin: 0 }}>
+              Everything you need to know about purchasing, authentications, and delivery.
+            </p>
+          </div>
+
+          <div style={{ maxWidth: '44rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {[
+              {
+                q: 'How does Doorstep Cash on Delivery (COD) & inspection work?',
+                a: 'Our white-glove express courier delivers directly to your address across all 64 districts in Bangladesh. You are welcomed to inspect the external parcel seal and verify physical condition at your doorstep before completing payment.',
+              },
+              {
+                q: 'Are all chronometers, acoustics, and luxury curations certified authentic?',
+                a: 'Yes, 100%. Every item is directly sourced, batch-inspected by master technicians, and accompanied by our Atelier Certificate of Authenticity and a comprehensive 2-Year Limited Warranty.',
+              },
+              {
+                q: 'What are the delivery schedules across Dhaka and nationwide?',
+                a: 'Inside Dhaka Metropolitan, orders are dispatched with priority and arrive within 24 to 48 hours. Nationwide deliveries to all 64 districts typically arrive within 48 to 72 hours with end-to-end SMS tracking.',
+              },
+              {
+                q: 'What is the 7-day Atelier exchange policy?',
+                a: 'Should you wish to exchange an item for a different colorway, size, or model, we provide a hassle-free 7-day exchange privilege. Simply contact our concierge helpline or message our WhatsApp team.',
+              },
+            ].map((faq, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    borderRadius: '1.25rem',
+                    border: '1px solid',
+                    borderColor: isOpen ? '#c8a24a' : '#e7e5e4',
+                    backgroundColor: isOpen ? '#faf7f2' : '#ffffff',
+                    overflow: 'hidden',
+                    transition: 'all 0.25s ease',
+                  }}
+                >
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? -1 : idx)}
+                    style={{
+                      width: '100%',
+                      padding: '1.25rem 1.5rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      color: isOpen ? '#0f3d2e' : '#1c1917',
+                    }}
+                  >
+                    <span>{faq.q}</span>
+                    <span style={{ fontSize: '1.2rem', color: '#c8a24a', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s ease' }}>
+                      ▾
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: '0 1.5rem 1.25rem', color: '#44403c', fontSize: '0.92rem', lineHeight: 1.7 }}>
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 7. VIP Atelier Club Newsletter Privilege */}
+        <section
+          style={{
+            marginTop: '5rem',
+            borderRadius: '2.5rem',
+            background: 'linear-gradient(135deg, #0c3125 0%, #0f3d2e 60%, #08231a 100%)',
+            padding: '3.5rem 2.5rem',
+            color: '#ffffff',
+            border: '1px solid rgba(200, 162, 74, 0.35)',
+            boxShadow: '0 25px 60px -15px rgba(12, 49, 37, 0.45)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 10,
+              maxWidth: '38rem',
+              margin: '0 auto',
+              textAlign: 'center',
+            }}
+          >
+            <span
+              style={{
+                display: 'inline-block',
+                borderRadius: '9999px',
+                border: '1px solid rgba(200, 162, 74, 0.4)',
+                backgroundColor: 'rgba(200, 162, 74, 0.12)',
+                padding: '0.35rem 1rem',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: '#c8a24a',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                marginBottom: '1rem',
+              }}
+            >
+              ✦ Atelier Private Circle
+            </span>
+            <h2 className="font-serif" style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)', fontWeight: 700, margin: '0 0 1rem', color: '#ffffff' }}>
+              Join the Atelier Circle
+            </h2>
+            <p style={{ color: '#e7e5e4', fontSize: '1rem', lineHeight: 1.6, marginBottom: '2rem' }}>
+              Receive an exclusive <strong style={{ color: '#c8a24a' }}>10% Welcome Privilege</strong> with code <code style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.5rem', borderRadius: '0.4rem', border: '1px solid #c8a24a' }}>LUXURY10</code>, early previews of limited-run timepieces, and bespoke private events.
+            </p>
+
+            {vipJoined ? (
+              <div style={{ backgroundColor: 'rgba(200, 162, 74, 0.15)', border: '1px solid #c8a24a', padding: '1rem 1.5rem', borderRadius: '1rem', color: '#ffffff', fontSize: '0.95rem' }}>
+                🎉 <strong>Welcome to the Atelier Circle!</strong> Your exclusive 10% privilege code is active: <strong style={{ color: '#c8a24a' }}>LUXURY10</strong>.
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (vipEmail.trim()) setVipJoined(true);
+                }}
+                style={{
+                  display: 'flex',
+                  gap: '0.75rem',
+                  maxWidth: '30rem',
+                  margin: '0 auto',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter your email or phone"
+                  value={vipEmail}
+                  onChange={(e) => setVipEmail(e.target.value)}
+                  style={{
+                    flex: '1 1 200px',
+                    padding: '0.85rem 1.25rem',
+                    borderRadius: '9999px',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    color: '#ffffff',
+                    fontSize: '0.95rem',
+                    outline: 'none',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-gold"
+                  style={{
+                    padding: '0.85rem 1.75rem',
+                    fontSize: '0.95rem',
+                    boxShadow: '0 8px 20px rgba(200, 162, 74, 0.35)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Claim Privilege →
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+
+        {/* 8. Quick View Modal */}
+        {quickViewProduct && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              backgroundColor: 'rgba(0, 0, 0, 0.72)',
+              backdropFilter: 'blur(10px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.25rem',
+            }}
+            onClick={() => setQuickViewProduct(null)}
+          >
+            <div
+              className="modal-enter"
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '2rem',
+                maxWidth: '52rem',
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                padding: '2rem',
+                border: '1px solid #e7e5e4',
+                boxShadow: '0 30px 70px rgba(0,0,0,0.3)',
+                position: 'relative',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setQuickViewProduct(null)}
+                style={{
+                  position: 'absolute',
+                  top: '1.25rem',
+                  right: '1.25rem',
+                  width: '2.4rem',
+                  height: '2.4rem',
+                  borderRadius: '9999px',
+                  backgroundColor: '#f5f5f4',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '1.2rem',
+                  color: '#44403c',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10,
+                }}
+              >
+                ✕
+              </button>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '2rem',
+                  alignItems: 'center',
+                }}
+              >
+                {/* Product Image */}
+                <div
+                  style={{
+                    position: 'relative',
+                    aspectRatio: '1',
+                    borderRadius: '1.5rem',
+                    overflow: 'hidden',
+                    backgroundColor: '#faf7f2',
+                  }}
+                >
+                  <img
+                    src={quickViewProduct.image || '/images/default.jpg'}
+                    alt={quickViewProduct.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  {quickViewProduct.on_sale && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '1rem',
+                        left: '1rem',
+                        backgroundColor: '#0f3d2e',
+                        color: '#ffffff',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        padding: '0.3rem 0.75rem',
+                        borderRadius: '9999px',
+                        border: '1px solid rgba(200, 162, 74, 0.4)',
+                      }}
+                    >
+                      PRIVILEGE OFFER
+                    </span>
+                  )}
+                </div>
+
+                {/* Info & Purchase */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ color: '#c8a24a', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    ✦ {quickViewProduct.cat || 'Curated Masterpiece'}
+                  </span>
+                  <h3
+                    className="font-serif"
+                    style={{
+                      fontSize: '1.75rem',
+                      fontWeight: 700,
+                      color: '#1c1917',
+                      margin: '0.35rem 0 0.6rem',
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {quickViewProduct.name}
+                  </h3>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem', marginBottom: '1rem' }}>
+                    <span style={{ color: '#c8a24a' }}>★</span>
+                    <span style={{ fontWeight: 700, color: '#1c1917' }}>{quickViewProduct.rating || '4.9'}</span>
+                    <span style={{ color: '#78716c' }}>({quickViewProduct.reviews || 18} authenticated reviews)</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f3d2e' }}>
+                      ৳{(quickViewProduct.price_now || quickViewProduct.price).toLocaleString()}
+                    </span>
+                    {quickViewProduct.on_sale && (
+                      <span style={{ fontSize: '1.1rem', color: '#a8a29e', textDecoration: 'line-through' }}>
+                        ৳{quickViewProduct.price.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+
+                  <p style={{ color: '#44403c', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                    {quickViewProduct.description || 'Artisanal curation crafted with meticulous precision and premium finishes, designed for enduring sophistication.'}
+                  </p>
+
+                  {/* Highlights */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem', color: '#0f3d2e', marginBottom: '1.5rem', backgroundColor: '#faf7f2', padding: '0.75rem 1rem', borderRadius: '0.75rem' }}>
+                    <div>✓ 2-Year Atelier Warranty</div>
+                    <div>✓ Authenticity Card Included</div>
+                    <div>✓ 24-48h Doorstep Delivery</div>
+                    <div>✓ Inspect Before Paying (COD)</div>
+                  </div>
+
+                  {/* Quantity and Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d6d3d1', borderRadius: '9999px', padding: '0.25rem 0.65rem' }}>
+                      <button
+                        onClick={() => setQuickViewQty((q) => Math.max(1, q - 1))}
+                        style={{ background: 'none', border: 'none', fontSize: '1.1rem', cursor: 'pointer', padding: '0 0.4rem' }}
+                      >
+                        -
+                      </button>
+                      <span style={{ fontWeight: 700, minWidth: '1.5rem', textAlign: 'center' }}>{quickViewQty}</span>
+                      <button
+                        onClick={() => setQuickViewQty((q) => q + 1)}
+                        style={{ background: 'none', border: 'none', fontSize: '1.1rem', cursor: 'pointer', padding: '0 0.4rem' }}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        addToCart(quickViewProduct, quickViewQty);
+                        setQuickViewProduct(null);
+                      }}
+                      className="btn btn-p"
+                      style={{ flex: 1, padding: '0.75rem 1.25rem', fontSize: '0.9rem' }}
+                    >
+                      + Add to Bag
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button
+                      onClick={() => {
+                        addToCart(quickViewProduct, quickViewQty);
+                        setQuickViewProduct(null);
+                        setIsDrawerOpen(true);
+                      }}
+                      className="btn btn-gold"
+                      style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem' }}
+                    >
+                      ⚡ Order via Cash on Delivery
+                    </button>
+                  </div>
+
+                  <Link
+                    href={`/products/${quickViewProduct.id}`}
+                    style={{
+                      textAlign: 'center',
+                      marginTop: '1rem',
+                      color: '#0f3d2e',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    View Full Specifications &amp; Client Feedback →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* 9. Grand Luxury Atelier Footer */}
+      <footer
+        style={{
+          backgroundColor: '#0c3125',
+          color: '#ffffff',
+          padding: '4rem 1.25rem 2rem',
+          marginTop: '6rem',
+          borderTop: '2px solid rgba(200, 162, 74, 0.4)',
+        }}
+      >
+        <div style={{ maxWidth: '80rem', margin: '0 auto' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '3rem',
+              marginBottom: '3rem',
+            }}
+          >
+            {/* Col 1: Brand Info */}
+            <div>
+              <div
+                className="font-serif"
+                style={{
+                  fontSize: '1.6rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  marginBottom: '1rem',
+                }}
+              >
+                <span style={{ color: '#c8a24a' }}>✦</span>
+                <span>Luxury &amp; Elegant</span>
+              </div>
+              <p style={{ color: '#d6d3d1', fontSize: '0.88rem', lineHeight: 1.7, margin: '0 0 1.25rem' }}>
+                Purveyors of Geneva-grade horology, studio-fidelity acoustics, artisanal living aesthetics, and radiance wellness for discerning lifestyles across Bangladesh.
+              </p>
+              <div style={{ display: 'flex', gap: '0.6rem' }}>
+                {['Facebook', 'Instagram', 'YouTube'].map((social) => (
+                  <span
+                    key={social}
+                    style={{
+                      display: 'inline-block',
+                      padding: '0.35rem 0.75rem',
+                      borderRadius: '9999px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(200, 162, 74, 0.25)',
+                      fontSize: '0.75rem',
+                      color: '#c8a24a',
+                    }}
+                  >
+                    {social}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Col 2: Curated Collections */}
+            <div>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#c8a24a', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.25rem' }}>
+                Curated Collections
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.88rem', color: '#e7e5e4' }}>
+                <li><a href="#interactive-atelier-3d" style={{ color: 'inherit', textDecoration: 'none' }}>✦ 3D Horology Atelier</a></li>
+                <li><a href="#flagship-creation" style={{ color: 'inherit', textDecoration: 'none' }}>Aura Pro Studio Wireless</a></li>
+                <li><a href="#shop" style={{ color: 'inherit', textDecoration: 'none' }}>Geneva Tourbillon Automatic</a></li>
+                <li><a href="#shop" style={{ color: 'inherit', textDecoration: 'none' }}>Artisanal Home &amp; Living</a></li>
+                <li><a href="#shop" style={{ color: 'inherit', textDecoration: 'none' }}>Radiance Botanical Elixir</a></li>
+              </ul>
+            </div>
+
+            {/* Col 3: Patron Services */}
+            <div>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#c8a24a', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.25rem' }}>
+                Patron Services
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.88rem', color: '#e7e5e4' }}>
+                <li><Link href="/track" style={{ color: 'inherit', textDecoration: 'none' }}>🚚 Real-Time Order Tracking</Link></li>
+                <li><a href="#shop" style={{ color: 'inherit', textDecoration: 'none' }}>💵 Doorstep Cash on Delivery</a></li>
+                <li><a href="#shop" style={{ color: 'inherit', textDecoration: 'none' }}>🛡️ 2-Year Atelier Warranty</a></li>
+                <li><a href="#shop" style={{ color: 'inherit', textDecoration: 'none' }}>🔄 7-Day Exchange Privilege</a></li>
+                <li><Link href="/admin" style={{ color: '#c8a24a', textDecoration: 'none' }}>🔒 Atelier Management Portal</Link></li>
+              </ul>
+            </div>
+
+            {/* Col 4: Dhaka Concierge */}
+            <div>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#c8a24a', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.25rem' }}>
+                Dhaka Concierge
+              </h4>
+              <div style={{ color: '#e7e5e4', fontSize: '0.88rem', lineHeight: 1.7 }}>
+                <div><strong>Flagship Atelier:</strong> Level 5, Road 11, Banani, Dhaka 1213</div>
+                <div style={{ marginTop: '0.5rem' }}><strong>Helpline:</strong> +880 1700-000000</div>
+                <div style={{ marginTop: '0.2rem' }}><strong>WhatsApp:</strong> +880 1700-000000</div>
+                <div style={{ marginTop: '0.2rem' }}><strong>Hours:</strong> Daily 10:00 AM – 10:00 PM</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar: Payment Badges & Copyright */}
+          <div
+            style={{
+              paddingTop: '2rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              fontSize: '0.82rem',
+              color: '#a8a29e',
+            }}
+          >
+            <div>
+              &copy; {new Date().getFullYear()} Luxury &amp; Elegant Atelier Ltd. All rights reserved.
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.75rem', color: '#c8a24a' }}>Accepted Payment Privileges:</span>
+              <span style={{ backgroundColor: '#ffffff', color: '#e11d48', padding: '0.2rem 0.5rem', borderRadius: '0.35rem', fontWeight: 800, fontSize: '0.75rem' }}>bKash</span>
+              <span style={{ backgroundColor: '#ffffff', color: '#ea580c', padding: '0.2rem 0.5rem', borderRadius: '0.35rem', fontWeight: 800, fontSize: '0.75rem' }}>Nagad</span>
+              <span style={{ backgroundColor: '#ffffff', color: '#1e40af', padding: '0.2rem 0.5rem', borderRadius: '0.35rem', fontWeight: 800, fontSize: '0.75rem' }}>VISA</span>
+              <span style={{ backgroundColor: '#ffffff', color: '#dc2626', padding: '0.2rem 0.5rem', borderRadius: '0.35rem', fontWeight: 800, fontSize: '0.75rem' }}>Mastercard</span>
+              <span style={{ backgroundColor: '#0f3d2e', border: '1px solid #c8a24a', color: '#c8a24a', padding: '0.2rem 0.5rem', borderRadius: '0.35rem', fontWeight: 700, fontSize: '0.75rem' }}>Doorstep COD</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </>
+  );
+}

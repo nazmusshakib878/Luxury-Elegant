@@ -31,3 +31,7 @@ Thumbs.db
 
 # Scratch & automated test artifacts
 scratch/
+
+# Next.js build output
+.next/
+out/
