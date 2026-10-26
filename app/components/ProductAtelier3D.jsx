@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useCart } from '../context/CartContext';
+import { formatPrice } from '../utils/format';
 
 const SHOWCASE_DATA = {
   watch: {
@@ -450,11 +451,11 @@ export default function ProductAtelier3D() {
                 <div style={{ color: '#a8a29e', fontSize: '0.8rem' }}>Exclusive Price</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
                   <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#c8a24a' }}>
-                    ৳{activeProduct.price.toLocaleString()}
+                    ৳{formatPrice(activeProduct?.price)}
                   </span>
-                  {activeProduct.regularPrice > activeProduct.price && (
+                  {activeProduct?.regularPrice > activeProduct?.price && (
                     <span style={{ fontSize: '1rem', color: '#78716c', textDecoration: 'line-through' }}>
-                      ৳{activeProduct.regularPrice.toLocaleString()}
+                      ৳{formatPrice(activeProduct?.regularPrice)}
                     </span>
                   )}
                 </div>

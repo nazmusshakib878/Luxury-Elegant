@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { formatPrice } from '../../utils/format';
 
 export default function InvoicePage() {
   const { id } = useParams();
@@ -136,9 +137,9 @@ export default function InvoicePage() {
                 {item.variant && <div style={{ fontSize: '0.8rem', color: '#78716c' }}>Option: {item.variant}</div>}
               </td>
               <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600 }}>{item.qty}</td>
-              <td style={{ padding: '1rem', textAlign: 'right', color: '#44403c' }}>৳{(+item.price).toLocaleString()}</td>
+              <td style={{ padding: '1rem', textAlign: 'right', color: '#44403c' }}>৳{formatPrice(item.price)}</td>
               <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: '#0f3d2e' }}>
-                ৳{((+item.price) * item.qty).toLocaleString()}
+                ৳{formatPrice((+item.price || 0) * (item.qty || 1))}
               </td>
             </tr>
           ))}
@@ -150,17 +151,17 @@ export default function InvoicePage() {
         <div style={{ width: '18rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#78716c' }}>
             <span>Subtotal:</span>
-            <span style={{ fontWeight: 600, color: '#1c1917' }}>৳{(+order.subtotal).toLocaleString()}</span>
+            <span style={{ fontWeight: 600, color: '#1c1917' }}>৳{formatPrice(order?.subtotal)}</span>
           </div>
-          {order.discount > 0 && (
+          {order?.discount > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0f3d2e' }}>
               <span>Coupon Discount:</span>
-              <span style={{ fontWeight: 600 }}>-৳{(+order.discount).toLocaleString()}</span>
+              <span style={{ fontWeight: 600 }}>-৳{formatPrice(order?.discount)}</span>
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#78716c' }}>
             <span>Shipping Charge:</span>
-            <span style={{ fontWeight: 600, color: '#1c1917' }}>{+order.shipping === 0 ? 'FREE' : `৳${(+order.shipping).toLocaleString()}`}</span>
+            <span style={{ fontWeight: 600, color: '#1c1917' }}>{+order?.shipping === 0 ? 'FREE' : `৳${formatPrice(order?.shipping)}`}</span>
           </div>
           <div
             style={{
@@ -175,7 +176,7 @@ export default function InvoicePage() {
             }}
           >
             <span>Total Payable:</span>
-            <span>৳{(+order.total).toLocaleString()}</span>
+            <span>৳{formatPrice(order?.total)}</span>
           </div>
         </div>
       </div>

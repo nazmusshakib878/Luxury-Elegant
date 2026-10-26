@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '../context/CartContext';
+import { formatPrice } from '../utils/format';
 
 export default function Navbar({ onSearch }) {
   const { cartCount, setIsDrawerOpen, wishlist, addToCart, toggleWishlist } = useCart();
@@ -646,7 +647,7 @@ export default function Navbar({ onSearch }) {
                           {item.name}
                         </div>
                         <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f3d2e', marginTop: '0.2rem' }}>
-                          ৳{(item.price_now || item.price).toLocaleString()}
+                          ৳{formatPrice(item.price_now ?? item.price)}
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem' }}>
                           <button

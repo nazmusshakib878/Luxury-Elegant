@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
+import { formatPrice } from '../utils/format';
 
 const STEPS = [
   { key: 'pending', label: 'Order Confirmed', icon: '📝' },
@@ -292,7 +293,7 @@ export default function OrderTrackingPage() {
                         <div style={{ fontSize: '0.78rem', color: '#78716c' }}>Quantity: {item.qty}</div>
                       </div>
                       <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f3d2e' }}>
-                        ৳{((+item.price) * item.qty).toLocaleString()}
+                        ৳{formatPrice((+item.price || 0) * (item.qty || 1))}
                       </div>
                     </div>
                   ))}
@@ -317,7 +318,7 @@ export default function OrderTrackingPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e7e5e4', paddingTop: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <span style={{ fontSize: '0.85rem', color: '#78716c' }}>Total Order Value:</span>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f3d2e' }}>৳{order.total?.toLocaleString()}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f3d2e' }}>৳{formatPrice(order?.total)}</div>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem' }}>

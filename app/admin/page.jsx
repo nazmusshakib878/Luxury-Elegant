@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
+import { formatPrice } from '../utils/format';
 
 // Authenticated admin API client (sends the stored admin token)
 async function apiAdmin(endpoint, options = {}) {
@@ -363,7 +364,7 @@ export default function AdminDashboardPage() {
                   <div style={{ backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #e7e5e4' }}>
                     <div style={{ fontSize: '0.8rem', color: '#78716c', fontWeight: 600, textTransform: 'uppercase' }}>Gross Revenue</div>
                     <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0f3d2e', marginTop: '0.4rem' }}>
-                      ৳{stats.revenue.toLocaleString()}
+                      ৳{formatPrice(stats.revenue)}
                     </div>
                   </div>
                   <div style={{ backgroundColor: '#ffffff', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #e7e5e4' }}>
@@ -401,7 +402,7 @@ export default function AdminDashboardPage() {
                             <td style={{ padding: '0.75rem', fontWeight: 700, color: '#0f3d2e' }}>#{ro.id}</td>
                             <td style={{ padding: '0.75rem', fontWeight: 600 }}>{ro.name}</td>
                             <td style={{ padding: '0.75rem', color: '#44403c' }}>{ro.phone}</td>
-                            <td style={{ padding: '0.75rem', fontWeight: 700 }}>৳{(+ro.total).toLocaleString()}</td>
+                            <td style={{ padding: '0.75rem', fontWeight: 700 }}>৳{formatPrice(ro.total)}</td>
                             <td style={{ padding: '0.75rem' }}>
                               <span style={{ padding: '0.25rem 0.6rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, backgroundColor: 'rgba(15, 61, 46, 0.1)', color: '#0f3d2e' }}>
                                 {ro.status}
@@ -454,7 +455,7 @@ export default function AdminDashboardPage() {
                       <td style={{ padding: '0.75rem' }}>
                         {Array.isArray(o.items) ? o.items.length : 0} items
                       </td>
-                      <td style={{ padding: '0.75rem', fontWeight: 700, color: '#0f3d2e' }}>৳{o.total?.toLocaleString()}</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 700, color: '#0f3d2e' }}>৳{formatPrice(o.total)}</td>
                       <td style={{ padding: '0.75rem' }}>
                         <select
                           value={o.status}
@@ -501,7 +502,7 @@ export default function AdminDashboardPage() {
                     <img src={p.image || '/images/default.jpg'} alt={p.name} style={{ width: '3rem', height: '3rem', objectFit: 'cover', borderRadius: '0.5rem' }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{p.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#0f3d2e', fontWeight: 700 }}>৳{(p.price_now || p.price).toLocaleString()} · Stock: {p.stock}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#0f3d2e', fontWeight: 700 }}>৳{formatPrice(p.price_now ?? p.price)} · Stock: {p.stock ?? 0}</div>
                     </div>
                   </div>
                 ))}

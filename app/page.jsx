@@ -7,6 +7,8 @@ import ProductAtelier3D from './components/ProductAtelier3D';
 import CategoryShowcase from './components/CategoryShowcase';
 import FlagshipCinematicShowcase from './components/FlagshipCinematicShowcase';
 import { useCart } from './context/CartContext';
+import { formatPrice, getProductPricing } from './utils/format';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import seedData from '../src/database/seed-data.json';
 
@@ -17,13 +19,18 @@ const INITIAL_PRODUCTS = (seedData.products || []).map((p) => {
   const rating = reviews.length
     ? +(reviews.reduce((s, r) => s + (r.rating || 5), 0) / reviews.length).toFixed(1)
     : 4.9;
+  const regularPrice = p.price != null && !isNaN(Number(p.price)) ? Number(p.price) : null;
+  const salePrice = p.sale_price != null && !isNaN(Number(p.sale_price)) ? Number(p.sale_price) : null;
+  const priceNow = salePrice != null ? salePrice : regularPrice;
   return {
     ...p,
     cat: cat ? cat.name : 'Artisanal',
     rating,
     reviews: reviews.length || 12,
-    price_now: p.sale_price ? +p.sale_price : +p.price,
-    on_sale: Boolean(p.sale_price && p.sale_price < p.price),
+    price: regularPrice,
+    sale_price: salePrice,
+    price_now: priceNow,
+    on_sale: Boolean(regularPrice !== null && salePrice !== null && salePrice < regularPrice),
   };
 });
 
@@ -79,7 +86,21 @@ export default function HomePage() {
         if (prodRes.ok) {
           const prods = await prodRes.json();
           if (Array.isArray(prods)) {
-            setProducts(prods);
+            const sanitized = prods.filter(Boolean).map((p) => {
+              const regularPrice = p.price != null && !isNaN(Number(p.price)) ? Number(p.price) : null;
+              const salePrice = p.sale_price != null && !isNaN(Number(p.sale_price)) ? Number(p.sale_price) : null;
+              const priceNow = p.price_now != null && !isNaN(Number(p.price_now)) ? Number(p.price_now) : (salePrice ?? regularPrice);
+              return {
+                ...p,
+                price: regularPrice,
+                sale_price: salePrice,
+                price_now: priceNow,
+                on_sale: Boolean(regularPrice !== null && salePrice !== null && salePrice < regularPrice),
+                rating: p.rating != null ? +p.rating : 4.9,
+                reviews: p.reviews != null ? +p.reviews : 12,
+              };
+            });
+            setProducts(sanitized);
             return;
           }
         }
@@ -730,7 +751,8 @@ export default function HomePage() {
                 const isWishlisted = wishlist.some((w) => w.id === p.id);
                 const isRecentlyAdded = addedId === p.id;
                 return (
-                  <div key={p.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <ErrorBoundary key={p.id}>
+                    <div className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
                     {/* Image Container with Badges */}
                     <div
                       style={{
@@ -835,7 +857,7 @@ export default function HomePage() {
 
                     {/* Product Details */}
                     {(() => {
-                      const savings = p.on_sale && p.price_now ? p.price - p.price_now : 0;
+                      const pricing = getProductPricing(p);
                       const catTag = (() => {
                         const c = String(p.cat || '').toLowerCase();
                         if (c.includes('fashion')) return '✦ BESPOKE COUTURE';
@@ -916,17 +938,17 @@ export default function HomePage() {
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', flexWrap: 'wrap' }}>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f3d2e', display: 'flex', alignItems: 'baseline' }}>
                                   <span style={{ color: '#c8a24a', fontSize: '0.95rem', marginRight: '0.15rem' }}>৳</span>
-                                  {(p.price_now || p.price).toLocaleString()}
+                                  {pricing.formattedCurrent}
                                 </div>
-                                {p.on_sale && (
+                                {pricing.onSale && pricing.formattedRegular && (
                                   <div style={{ fontSize: '0.8rem', color: '#a8a29e', textDecoration: 'line-through' }}>
-                                    ৳{p.price.toLocaleString()}
+                                    ৳{pricing.formattedRegular}
                                   </div>
                                 )}
                               </div>
-                              {savings > 0 && (
+                              {pricing.savings > 0 && pricing.formattedSavings && (
                                 <div style={{ fontSize: '0.68rem', color: '#16a34a', fontWeight: 600, marginTop: '0.15rem' }}>
-                                  Privilege Save ৳{savings.toLocaleString()}
+                                  Privilege Save ৳{pricing.formattedSavings}
                                 </div>
                               )}
                             </div>
@@ -953,8 +975,9 @@ export default function HomePage() {
                       );
                     })()}
                   </div>
-                );
-              })}
+                </ErrorBoundary>
+              );
+            })}
             </div>
           )}
         </section>
@@ -1617,16 +1640,21 @@ export default function HomePage() {
                     <span style={{ color: '#78716c' }}>({quickViewProduct.reviews || 18} authenticated reviews)</span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f3d2e' }}>
-                      ৳{(quickViewProduct.price_now || quickViewProduct.price).toLocaleString()}
-                    </span>
-                    {quickViewProduct.on_sale && (
-                      <span style={{ fontSize: '1.1rem', color: '#a8a29e', textDecoration: 'line-through' }}>
-                        ৳{quickViewProduct.price.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
+                  {(() => {
+                    const qvPricing = getProductPricing(quickViewProduct);
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem', marginBottom: '1rem' }}>
+                        <span style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f3d2e' }}>
+                          ৳{qvPricing.formattedCurrent}
+                        </span>
+                        {qvPricing.onSale && qvPricing.formattedRegular && (
+                          <span style={{ fontSize: '1.1rem', color: '#a8a29e', textDecoration: 'line-through' }}>
+                            ৳{qvPricing.formattedRegular}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   <p style={{ color: '#44403c', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
                     {quickViewProduct.description || 'Artisanal curation crafted with meticulous precision and premium finishes, designed for enduring sophistication.'}

@@ -2011,9 +2011,9 @@
     const data = SHOWCASE_PRODUCTS[activeModelKey];
     if (!data) return;
 
-    const priceFormatted = '৳' + Number(data.price).toLocaleString();
-    const regularFormatted = data.onSale ? '৳' + Number(data.regularPrice).toLocaleString() : '';
-    const discountAmount = data.onSale ? '৳' + Number(data.regularPrice - data.price).toLocaleString() : '';
+    const priceFormatted = (data.price != null && !isNaN(data.price)) ? '৳' + Number(data.price).toLocaleString('en-IN') : '৳—';
+    const regularFormatted = (data.onSale && data.regularPrice != null && !isNaN(data.regularPrice)) ? '৳' + Number(data.regularPrice).toLocaleString('en-IN') : '';
+    const discountAmount = (data.onSale && data.regularPrice != null && data.price != null && !isNaN(data.regularPrice - data.price)) ? '৳' + Number(data.regularPrice - data.price).toLocaleString('en-IN') : '';
 
     cardEl.innerHTML = `
       <div class="space-y-6">

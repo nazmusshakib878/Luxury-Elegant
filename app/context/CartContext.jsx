@@ -14,10 +14,24 @@ export function CartProvider({ children }) {
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem('luxury_shop_cart');
-      if (savedCart) setCart(JSON.parse(savedCart));
+      if (savedCart) {
+        const parsed = JSON.parse(savedCart);
+        if (Array.isArray(parsed)) {
+          const sanitized = parsed.filter(Boolean).map((item) => ({
+            ...item,
+            price: item.price != null && !isNaN(Number(item.price)) ? Number(item.price) : 0,
+            regularPrice: item.regularPrice != null && !isNaN(Number(item.regularPrice)) ? Number(item.regularPrice) : (item.price != null ? Number(item.price) : 0),
+            qty: item.qty != null && !isNaN(Number(item.qty)) && Number(item.qty) > 0 ? Number(item.qty) : 1,
+          }));
+          setCart(sanitized);
+        }
+      }
 
       const savedWishlist = localStorage.getItem('luxury_shop_wishlist');
-      if (savedWishlist) setWishlist(JSON.parse(savedWishlist));
+      if (savedWishlist) {
+        const parsed = JSON.parse(savedWishlist);
+        if (Array.isArray(parsed)) setWishlist(parsed.filter(Boolean));
+      }
     } catch {}
   }, []);
 
@@ -43,16 +57,20 @@ export function CartProvider({ children }) {
   };
 
   const addToCart = (product, qty = 1, variant = null) => {
+    if (!product || typeof product !== 'object') return;
     setCart((prev) => {
       const existingIndex = prev.findIndex(
         (item) => item.id === product.id && JSON.stringify(item.variant) === JSON.stringify(variant)
       );
 
-      const price = product.price_now || product.sale_price || product.price;
+      const rawPrice = product.price_now ?? product.sale_price ?? product.price;
+      const validPrice = rawPrice != null && !isNaN(Number(rawPrice)) ? Number(rawPrice) : 0;
+      const validRegular = product.price != null && !isNaN(Number(product.price)) ? Number(product.price) : validPrice;
+      const safeQty = qty != null && !isNaN(Number(qty)) && Number(qty) > 0 ? Number(qty) : 1;
 
       if (existingIndex > -1) {
         const updated = [...prev];
-        updated[existingIndex].qty += qty;
+        updated[existingIndex].qty += safeQty;
         return updated;
       }
 
@@ -61,12 +79,12 @@ export function CartProvider({ children }) {
         {
           id: product.id,
           name: product.name,
-          price: +price,
-          regularPrice: +product.price,
+          price: validPrice,
+          regularPrice: validRegular,
           image: product.image,
-          stock: +product.stock,
+          stock: product.stock != null && !isNaN(Number(product.stock)) ? Number(product.stock) : 10,
           variant,
-          qty,
+          qty: safeQty,
         },
       ];
     });

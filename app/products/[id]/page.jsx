@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../components/Navbar';
 import { useCart } from '../../context/CartContext';
+import { formatPrice, getProductPricing } from '../../utils/format';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -221,19 +222,24 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Pricing */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.85rem', marginBottom: '1.25rem' }}>
-              <span style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0f3d2e' }}>
-                ৳{(product.price_now || product.price).toLocaleString()}
-              </span>
-              {product.on_sale && (
-                <span style={{ fontSize: '1.25rem', color: '#a8a29e', textDecoration: 'line-through' }}>
-                  ৳{product.price.toLocaleString()}
-                </span>
-              )}
-              <span style={{ fontSize: '0.85rem', color: '#0f3d2e', fontWeight: 600, marginLeft: 'auto', backgroundColor: 'rgba(15, 61, 46, 0.08)', padding: '0.25rem 0.65rem', borderRadius: '9999px' }}>
-                ✓ {product.stock} Units in Atelier Stock
-              </span>
-            </div>
+            {(() => {
+              const pricing = getProductPricing(product);
+              return (
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.85rem', marginBottom: '1.25rem' }}>
+                  <span style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0f3d2e' }}>
+                    ৳{pricing.formattedCurrent}
+                  </span>
+                  {pricing.onSale && pricing.formattedRegular && (
+                    <span style={{ fontSize: '1.25rem', color: '#a8a29e', textDecoration: 'line-through' }}>
+                      ৳{pricing.formattedRegular}
+                    </span>
+                  )}
+                  <span style={{ fontSize: '0.85rem', color: '#0f3d2e', fontWeight: 600, marginLeft: 'auto', backgroundColor: 'rgba(15, 61, 46, 0.08)', padding: '0.25rem 0.65rem', borderRadius: '9999px' }}>
+                    ✓ {product.stock ?? 0} Units in Atelier Stock
+                  </span>
+                </div>
+              );
+            })()}
 
             <p style={{ color: '#44403c', fontSize: '0.95rem', lineHeight: 1.7, marginBottom: '1.5rem' }}>
               {product.description || 'Finely crafted luxury masterpiece designed with exceptional attention to material authenticity and enduring elegance.'}
@@ -289,7 +295,7 @@ export default function ProductDetailPage() {
                   className="btn btn-p"
                   style={{ flex: 1, padding: '0.85rem 1.5rem', fontSize: '1rem' }}
                 >
-                  🛍️ Add to Collection (৳{((product.price_now || product.price) * qty).toLocaleString()})
+                  🛍️ Add to Collection (৳{formatPrice(((product.price_now ?? product.price) || 0) * qty)})
                 </button>
               </div>
 
@@ -502,7 +508,7 @@ export default function ProductDetailPage() {
                     </Link>
                     <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid #f5f5f4' }}>
                       <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f3d2e' }}>
-                        ৳{(p.price_now || p.price).toLocaleString()}
+                        ৳{formatPrice(p.price_now ?? p.price)}
                       </span>
                       <button
                         onClick={() => addToCart(p)}

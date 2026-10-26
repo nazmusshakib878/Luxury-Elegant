@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '../context/CartContext';
+import { formatPrice } from '../utils/format';
 
 export default function CartDrawer() {
   const {
@@ -34,7 +35,11 @@ export default function CartDrawer() {
 
   if (!isDrawerOpen) return null;
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const subtotal = cart.reduce((sum, item) => {
+    const itemPrice = item && item.price != null && !isNaN(Number(item.price)) ? Number(item.price) : 0;
+    const itemQty = item && item.qty != null && !isNaN(Number(item.qty)) ? Number(item.qty) : 1;
+    return sum + itemPrice * itemQty;
+  }, 0);
   const discountAmount = Math.round((subtotal * couponDiscountPercent) / 100);
   const shippingFee = subtotal >= 3000 ? 0 : area === 'dhaka' ? 60 : 120;
   const grandTotal = Math.max(0, subtotal - discountAmount + shippingFee);
@@ -233,9 +238,9 @@ export default function CartDrawer() {
               {subtotal >= freeShippingThreshold ? (
                 <span>✓ Complimentary White-Glove Delivery Unlocked!</span>
               ) : (
-                <span>Add ৳{(freeShippingThreshold - subtotal).toLocaleString()} more for Free Delivery</span>
+                <span>Add ৳{formatPrice(Math.max(0, freeShippingThreshold - subtotal))} more for Free Delivery</span>
               )}
-              <span>৳{subtotal.toLocaleString()} / ৳{freeShippingThreshold.toLocaleString()}</span>
+              <span>৳{formatPrice(subtotal)} / ৳{formatPrice(freeShippingThreshold)}</span>
             </div>
             <div style={{ width: '100%', height: '6px', backgroundColor: '#dcfce7', borderRadius: '9999px', overflow: 'hidden' }}>
               <div
@@ -300,7 +305,7 @@ export default function CartDrawer() {
                           {item.name}
                         </div>
                         <div style={{ fontSize: '0.82rem', color: '#78716c', margin: '0.2rem 0' }}>
-                          ৳{item.price.toLocaleString()} each
+                          ৳{formatPrice(item.price)} each
                         </div>
 
                         {/* Quantity Controls */}
@@ -353,7 +358,7 @@ export default function CartDrawer() {
                         </div>
                       </div>
                       <div style={{ fontWeight: 700, color: '#0f3d2e', fontSize: '1rem', whiteSpace: 'nowrap' }}>
-                        ৳{(item.price * item.qty).toLocaleString()}
+                        ৳{formatPrice((item.price || 0) * (item.qty || 1))}
                       </div>
                     </div>
                   ))}
@@ -576,7 +581,7 @@ export default function CartDrawer() {
                         Merchant bKash / Nagad Number: <strong>01700-000000</strong>
                       </div>
                       <div style={{ color: '#44403c', marginBottom: '0.5rem' }}>
-                        Please Send Money ৳{grandTotal.toLocaleString()} and enter Transaction ID (TrxID) below:
+                        Please Send Money ৳{formatPrice(grandTotal)} and enter Transaction ID (TrxID) below:
                       </div>
                       <input
                         type="text"
@@ -606,7 +611,7 @@ export default function CartDrawer() {
                   className="btn btn-gold"
                   style={{ flex: 2 }}
                 >
-                  {isSubmitting ? 'Confirming Order…' : `Confirm Order (৳${grandTotal.toLocaleString()})`}
+                  {isSubmitting ? 'Confirming Order…' : `Confirm Order (৳${formatPrice(grandTotal)})`}
                 </button>
               </div>
             </form>
@@ -643,7 +648,7 @@ export default function CartDrawer() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                   <span style={{ color: '#78716c' }}>Amount Due:</span>
-                  <span style={{ fontWeight: 700, color: '#0f3d2e', fontSize: '1.1rem' }}>৳{placedOrder.total?.toLocaleString()}</span>
+                  <span style={{ fontWeight: 700, color: '#0f3d2e', fontSize: '1.1rem' }}>৳{formatPrice(placedOrder?.total)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#78716c' }}>Payment Method:</span>
@@ -696,13 +701,13 @@ export default function CartDrawer() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#78716c' }}>
               <span>Subtotal:</span>
-              <span style={{ fontWeight: 600, color: '#1c1917' }}>৳{subtotal.toLocaleString()}</span>
+              <span style={{ fontWeight: 600, color: '#1c1917' }}>৳{formatPrice(subtotal)}</span>
             </div>
 
             {discountAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#0f3d2e' }}>
                 <span>Privilege Discount ({couponDiscountPercent}%):</span>
-                <span style={{ fontWeight: 700 }}>-৳{discountAmount.toLocaleString()}</span>
+                <span style={{ fontWeight: 700 }}>-৳{formatPrice(discountAmount)}</span>
               </div>
             )}
 
@@ -726,7 +731,7 @@ export default function CartDrawer() {
               }}
             >
               <span>Estimated Total:</span>
-              <span>৳{grandTotal.toLocaleString()}</span>
+              <span>৳{formatPrice(grandTotal)}</span>
             </div>
 
             <button
