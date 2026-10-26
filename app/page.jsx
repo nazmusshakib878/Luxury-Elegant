@@ -7,18 +7,17 @@ import ProductAtelier3D from './components/ProductAtelier3D';
 import CategoryShowcase from './components/CategoryShowcase';
 import FlagshipCinematicShowcase from './components/FlagshipCinematicShowcase';
 import { useCart } from './context/CartContext';
-import { formatPrice, getProductPricing } from './utils/format';
+import { formatPrice, getProductPricing, normalizeProducts } from './utils/format';
 import ErrorBoundary from './components/ErrorBoundary';
 
 import seedData from '../src/database/seed-data.json';
 
 const INITIAL_CATEGORIES = (seedData.categories || []).map((c) => ({ ...c }));
-const INITIAL_PRODUCTS = (seedData.products || []).map((p) => {
+const INITIAL_PRODUCTS = normalizeProducts((seedData.products || []).map((p) => {
   const cat = INITIAL_CATEGORIES.find((c) => c.id === p.cat_id);
   const reviews = (seedData.reviews || []).filter((r) => r.product_id === p.id);
-  const rating = reviews.length
-    ? +(reviews.reduce((s, r) => s + (r.rating || 5), 0) / reviews.length).toFixed(1)
-    : 4.9;
+  const validRatings = reviews.map((review) => Number(review.rating)).filter((rating) => Number.isFinite(rating) && rating >= 0 && rating <= 5);
+  const rating = validRatings.length ? +(validRatings.reduce((sum, value) => sum + value, 0) / validRatings.length).toFixed(1) : null;
   const regularPrice = p.price != null && !isNaN(Number(p.price)) ? Number(p.price) : null;
   const salePrice = p.sale_price != null && !isNaN(Number(p.sale_price)) ? Number(p.sale_price) : null;
   const priceNow = salePrice != null ? salePrice : regularPrice;
@@ -26,19 +25,19 @@ const INITIAL_PRODUCTS = (seedData.products || []).map((p) => {
     ...p,
     cat: cat ? cat.name : 'Artisanal',
     rating,
-    reviews: reviews.length || 12,
+    reviews: reviews.length,
     price: regularPrice,
     sale_price: salePrice,
     price_now: priceNow,
     on_sale: Boolean(regularPrice !== null && salePrice !== null && salePrice < regularPrice),
   };
-});
+}));
 
 export default function HomePage() {
   const { addToCart, wishlist, toggleWishlist, setIsDrawerOpen, showToast } = useCart();
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('default');
@@ -64,16 +63,9 @@ export default function HomePage() {
 
   // Fetch products and categories on mount or when filter changes
   useEffect(() => {
+    let cancelled = false;
     async function loadData() {
       try {
-        const catRes = await fetch('/api/categories');
-        if (catRes.ok) {
-          const cats = await catRes.json();
-          if (Array.isArray(cats) && cats.length > 0) {
-            setCategories(cats);
-          }
-        }
-
         const params = new URLSearchParams();
         if (selectedCat !== 'all') params.set('cat', selectedCat);
         if (searchQuery.trim()) params.set('q', searchQuery.trim());
@@ -81,61 +73,46 @@ export default function HomePage() {
         if (sortBy === 'price_desc') params.set('sort', 'price_desc');
         if (sortBy === 'rating') params.set('sort', 'rating');
         if (saleOnly) params.set('sale', '1');
-
-        const prodRes = await fetch(`/api/products?${params.toString()}`);
-        if (prodRes.ok) {
-          const prods = await prodRes.json();
+        const [catRes, prodRes] = await Promise.all([
+          fetch('/api/categories').catch(() => null),
+          fetch('/api/products?' + params.toString()).catch(() => null),
+        ]);
+        if (cancelled) return;
+        if (catRes?.ok) {
+          const cats = await catRes.json().catch(() => null);
+          if (Array.isArray(cats) && cats.length) {
+            setCategories(cats.filter((c) => c && c.id != null && typeof c.name === 'string'));
+          }
+        }
+        if (prodRes?.ok) {
+          const prods = await prodRes.json().catch(() => null);
           if (Array.isArray(prods)) {
-            const sanitized = prods.filter(Boolean).map((p) => {
-              const regularPrice = p.price != null && !isNaN(Number(p.price)) ? Number(p.price) : null;
-              const salePrice = p.sale_price != null && !isNaN(Number(p.sale_price)) ? Number(p.sale_price) : null;
-              const priceNow = p.price_now != null && !isNaN(Number(p.price_now)) ? Number(p.price_now) : (salePrice ?? regularPrice);
-              return {
-                ...p,
-                price: regularPrice,
-                sale_price: salePrice,
-                price_now: priceNow,
-                on_sale: Boolean(regularPrice !== null && salePrice !== null && salePrice < regularPrice),
-                rating: p.rating != null ? +p.rating : 4.9,
-                reviews: p.reviews != null ? +p.reviews : 12,
-              };
-            });
-            setProducts(sanitized);
+            setProducts(normalizeProducts(prods));
             return;
           }
         }
-        
-        // Fallback: If API returns error or is offline, perform client-side filtering on curated collection
         let filtered = [...INITIAL_PRODUCTS];
-        if (selectedCat !== 'all') filtered = filtered.filter((p) => String(p.cat_id) === String(selectedCat));
+        if (selectedCat !== 'all') {
+          filtered = filtered.filter((p) => String(p.cat_id) === String(selectedCat));
+        }
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
-          filtered = filtered.filter((p) => p.name.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q)));
+          filtered = filtered.filter((p) => (p.name || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q));
         }
         if (saleOnly) filtered = filtered.filter((p) => p.on_sale);
-        if (sortBy === 'price_asc') filtered.sort((a, b) => a.price_now - b.price_now);
-        if (sortBy === 'price_desc') filtered.sort((a, b) => b.price_now - a.price_now);
+        if (sortBy === 'price_asc') filtered.sort((a, b) => (a.price_now ?? Infinity) - (b.price_now ?? Infinity));
+        if (sortBy === 'price_desc') filtered.sort((a, b) => (b.price_now ?? -Infinity) - (a.price_now ?? -Infinity));
         if (sortBy === 'rating') filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        setProducts(filtered);
+        setProducts(normalizeProducts(filtered));
       } catch (err) {
         console.warn('API notice: using curated collection fallback:', err);
-        let filtered = [...INITIAL_PRODUCTS];
-        if (selectedCat !== 'all') filtered = filtered.filter((p) => String(p.cat_id) === String(selectedCat));
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          filtered = filtered.filter((p) => p.name.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q)));
-        }
-        if (saleOnly) filtered = filtered.filter((p) => p.on_sale);
-        if (sortBy === 'price_asc') filtered.sort((a, b) => a.price_now - b.price_now);
-        if (sortBy === 'price_desc') filtered.sort((a, b) => b.price_now - a.price_now);
-        if (sortBy === 'rating') filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        setProducts(filtered);
+        if (!cancelled) setProducts(INITIAL_PRODUCTS);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
-
     loadData();
+    return () => { cancelled = true; };
   }, [selectedCat, searchQuery, sortBy, saleOnly]);
 
   return (
@@ -751,7 +728,7 @@ export default function HomePage() {
                 const isWishlisted = wishlist.some((w) => w.id === p.id);
                 const isRecentlyAdded = addedId === p.id;
                 return (
-                  <ErrorBoundary key={p.id}>
+                  <ErrorBoundary key={p.id ?? `${p.name}-${p.cat_id}`} fallback={null}>
                     <div className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
                     {/* Image Container with Badges */}
                     <div
@@ -919,8 +896,8 @@ export default function HomePage() {
                             }}
                           >
                             <span style={{ color: '#c8a24a' }}>★</span>
-                            <span style={{ fontWeight: 600, color: '#1c1917' }}>{p.rating || '4.9'}</span>
-                            <span style={{ color: '#a8a29e' }}>({p.reviews || 12} reviews)</span>
+                            <span style={{ fontWeight: 600, color: '#1c1917' }}>{p.rating !== null && p.rating !== undefined ? p.rating.toFixed(1) : ''}</span>
+                            <span style={{ color: '#a8a29e' }}>({formatPrice(p.reviews, '0')} reviews)</span>
                           </div>
 
                           {/* Price & Action */}
@@ -938,7 +915,7 @@ export default function HomePage() {
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', flexWrap: 'wrap' }}>
                                 <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f3d2e', display: 'flex', alignItems: 'baseline' }}>
                                   <span style={{ color: '#c8a24a', fontSize: '0.95rem', marginRight: '0.15rem' }}>৳</span>
-                                  {pricing.formattedCurrent}
+                                  {pricing.priceNow !== null ? pricing.formattedCurrent : 'Price unavailable'}
                                 </div>
                                 {pricing.onSale && pricing.formattedRegular && (
                                   <div style={{ fontSize: '0.8rem', color: '#a8a29e', textDecoration: 'line-through' }}>
@@ -1636,8 +1613,8 @@ export default function HomePage() {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem', marginBottom: '1rem' }}>
                     <span style={{ color: '#c8a24a' }}>★</span>
-                    <span style={{ fontWeight: 700, color: '#1c1917' }}>{quickViewProduct.rating || '4.9'}</span>
-                    <span style={{ color: '#78716c' }}>({quickViewProduct.reviews || 18} authenticated reviews)</span>
+                    <span style={{ fontWeight: 700, color: '#1c1917' }}>{quickViewProduct.rating !== null && quickViewProduct.rating !== undefined ? quickViewProduct.rating.toFixed(1) : ''}</span>
+                    <span style={{ color: '#78716c' }}>({formatPrice(quickViewProduct.reviews, '0')} authenticated reviews)</span>
                   </div>
 
                   {(() => {

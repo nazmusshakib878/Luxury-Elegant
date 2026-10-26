@@ -5,6 +5,7 @@ let pgPool = null;
 let sqliteDb = null;
 const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 const usePostgres = Boolean(DATABASE_URL);
+let pgUnavailable = false;
 
 if (usePostgres) {
   // Production PostgreSQL mode (Neon, Supabase, Vercel Postgres, etc.)
@@ -67,39 +68,85 @@ function getMemoryStore() {
   return memoryStore;
 }
 
+function isCatalogRead(sql) {
+  return /^\s*SELECT\s+/i.test(sql) && /\bFROM\s+(products|categories|settings|coupons|reviews)\b/i.test(sql) && !/\bFROM\s+(users|orders|abandoned)\b/i.test(sql);
+}
+
+function switchToReadOnlyCatalog(err) {
+  pgUnavailable = true;
+  console.error('Persistent PostgreSQL is unavailable; serving the read-only catalog preview.', err?.message || 'connection failed');
+}
+
 const db = {
-  isPostgres: usePostgres,
+  get isPostgres() { return usePostgres && !pgUnavailable; },
   isVercel,
-  isFallback: !usePostgres && !sqliteDb,
+  get isFallback() { return (!usePostgres && !sqliteDb) || pgUnavailable; },
   pool: pgPool,
   sqlite: sqliteDb,
   getMemoryStore,
 
   async all(sql, params = []) {
     if (usePostgres) {
-      const res = await pgPool.query(toPgSql(sql), params);
-      return res.rows;
+      if (pgUnavailable) {
+        if (isCatalogRead(sql)) return getMemoryStore().all(sql, params);
+        throw new Error('Persistent database unavailable; customer and order records cannot be read from preview mode.');
+      }
+      try {
+        const res = await pgPool.query(toPgSql(sql), params);
+        if (pgUnavailable) {
+          if (isCatalogRead(sql)) return getMemoryStore().all(sql, params);
+          throw new Error('Persistent database unavailable; customer and order records cannot be read from preview mode.');
+        }
+        return res.rows;
+      } catch (err) {
+        switchToReadOnlyCatalog(err);
+        if (isCatalogRead(sql)) return getMemoryStore().all(sql, params);
+        throw new Error('Persistent database unavailable; customer and order records cannot be read from preview mode.');
+      }
     }
     if (sqliteDb) {
       return sqliteDb.prepare(sql).all(...params);
+    }
+    if (/^\s*SELECT\s+/i.test(sql) && /\bFROM\s+(users|orders|abandoned)\b/i.test(sql)) {
+      throw new Error('Persistent database required for customer and order records.');
     }
     return getMemoryStore().all(sql, params);
   },
 
   async get(sql, params = []) {
     if (usePostgres) {
-      const res = await pgPool.query(toPgSql(sql), params);
-      return res.rows[0];
+      if (pgUnavailable) {
+        if (isCatalogRead(sql)) return getMemoryStore().get(sql, params);
+        throw new Error('Persistent database unavailable; customer and order records cannot be read from preview mode.');
+      }
+      try {
+        const res = await pgPool.query(toPgSql(sql), params);
+        if (pgUnavailable) {
+          if (isCatalogRead(sql)) return getMemoryStore().get(sql, params);
+          throw new Error('Persistent database unavailable; customer and order records cannot be read from preview mode.');
+        }
+        return res.rows[0];
+      } catch (err) {
+        switchToReadOnlyCatalog(err);
+        if (isCatalogRead(sql)) return getMemoryStore().get(sql, params);
+        throw new Error('Persistent database unavailable; customer and order records cannot be read from preview mode.');
+      }
     }
     if (sqliteDb) {
       return sqliteDb.prepare(sql).get(...params);
+    }
+    if (/^\s*SELECT\s+/i.test(sql) && /\bFROM\s+(users|orders|abandoned)\b/i.test(sql)) {
+      throw new Error('Persistent database required for customer and order records.');
     }
     return getMemoryStore().get(sql, params);
   },
 
   async run(sql, params = []) {
     if (usePostgres) {
-      const res = await pgPool.query(toPgSql(sql), params);
+      if (pgUnavailable) throw new Error('Persistent database unavailable; all writes are disabled in read-only catalog preview mode.');
+      let res;
+      try { res = await pgPool.query(toPgSql(sql), params); }
+      catch (err) { switchToReadOnlyCatalog(err); throw new Error('Persistent database unavailable; all writes are disabled in read-only catalog preview mode.'); }
       return {
         changes: res.rowCount,
         lastInsertRowid: res.rows[0]?.id || null,
@@ -115,7 +162,9 @@ const db = {
 
   async exec(sql) {
     if (usePostgres) {
-      return await pgPool.query(sql);
+      if (pgUnavailable) throw new Error('Persistent database unavailable; schema changes are disabled in read-only catalog preview mode.');
+      try { return await pgPool.query(sql); }
+      catch (err) { switchToReadOnlyCatalog(err); throw err; }
     }
     if (sqliteDb) {
       return sqliteDb.exec(sql);

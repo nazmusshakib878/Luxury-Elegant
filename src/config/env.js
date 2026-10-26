@@ -38,10 +38,11 @@ const INSECURE_SECRETS = new Set([
 ]);
 
 let secret = env.SECRET || 'dev-secret-change-me';
-if (INSECURE_SECRETS.has(secret)) {
-  if (isProduction) {
-    console.error('⚠️ [SECURITY CRITICAL] SECRET environment variable is unset or uses an insecure default. Please configure a 64-character random hex secret in your production environment variables.');
-  }
+const isStrongProductionSecret = /^[a-fA-F0-9]{64,}$/.test(secret) && !INSECURE_SECRETS.has(secret);
+if (isProduction && !isStrongProductionSecret) {
+  // Fail closed: weak or default secrets must never sign production sessions.
+  secret = require('crypto').randomBytes(32).toString('hex');
+  console.error('SECURITY: invalid production SECRET. Using an ephemeral random secret; configure a stable cryptographically random 64-character hex SECRET to enable durable sessions.');
 }
 
 module.exports = {
@@ -49,6 +50,7 @@ module.exports = {
   PORT: parseInt(env.PORT || '3000', 10),
   BASE_URL: env.BASE_URL || `http://localhost:${env.PORT || 3000}`,
   SECRET: secret,
+  SECRET_CONFIGURED: !isProduction || isStrongProductionSecret,
   DB_FILE: env.DB || 'shop.db',
   DATABASE_URL: env.DATABASE_URL || env.POSTGRES_URL || env.POSTGRES_PRISMA_URL || '',
 

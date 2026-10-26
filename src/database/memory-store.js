@@ -220,12 +220,8 @@ class MemoryStore {
         return [{ count: this.users.length, c: this.users.length }];
       }
       if (/role\s*=\s*'admin'/i.test(cleanSql)) {
-        const admin = this.users.find((u) => u.role === 'admin') || {
-          id: 1,
-          email: 'admin@luxury-elegant.com',
-          role: 'admin',
-        };
-        return [admin];
+        const admin = this.users.find((u) => u.role === 'admin');
+        return admin ? [admin] : [];
       }
       if (/email/i.test(cleanSql)) {
         const target = String(params[0] || '').toLowerCase().trim();

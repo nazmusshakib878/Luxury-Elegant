@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+const { isAdminRequest } = require('../../../../src/utils/route-auth');
 const db = require('../../../../src/database/connection');
 const { initSchema } = require('../../../../src/database/schema');
 
-export async function GET() {
+export async function GET(request) {
+  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
   try {
     await initSchema();
     const coupons = await db.all('SELECT * FROM coupons ORDER BY code ASC');
@@ -13,6 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
   try {
     await initSchema();
     if (db.isFallback) {
@@ -42,6 +45,7 @@ export async function POST(request) {
 }
 
 export async function DELETE(request) {
+  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
   try {
     await initSchema();
     if (db.isFallback) {

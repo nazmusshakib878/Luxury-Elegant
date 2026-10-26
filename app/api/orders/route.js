@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+const { isAdminRequest } = require('../../../src/utils/route-auth');
 const db = require('../../../src/database/connection');
 const { initSchema } = require('../../../src/database/schema');
 const { DEFAULT_SETTINGS } = require('../../../src/config/constants');
 const { notifyNewOrder } = require('../../../src/services/notification');
 
-export async function GET() {
+export async function GET(request) {
+  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
   try {
     await initSchema();
     const orders = await db.all('SELECT * FROM orders ORDER BY id DESC');

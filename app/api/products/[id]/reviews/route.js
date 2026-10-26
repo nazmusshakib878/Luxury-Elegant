@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+const { getRequestUser } = require('../../../../../src/utils/route-auth');
 const db = require('../../../../../src/database/connection');
 const { initSchema } = require('../../../../../src/database/schema');
 
@@ -19,13 +20,12 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   try {
     await initSchema();
+    const user = getRequestUser(request);
+    if (!user) return NextResponse.json({ error: 'Login required to submit a review' }, { status: 401 });
     const { id } = await params;
     const body = await request.json();
-    const { user_name, rating, comment } = body;
+    const { rating, comment } = body;
 
-    if (!user_name || !user_name.trim()) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
-    }
     if (!comment || !comment.trim()) {
       return NextResponse.json({ error: 'Review comment is required' }, { status: 400 });
     }
@@ -34,7 +34,7 @@ export async function POST(request, { params }) {
 
     await db.run(
       'INSERT INTO reviews (product_id, user_name, rating, comment) VALUES (?, ?, ?, ?)',
-      [+id, user_name.trim(), cleanRating, comment.trim()]
+      [+id, String(user.name || 'Customer').trim().slice(0, 100), cleanRating, comment.trim().slice(0, 2000)]
     );
 
     return NextResponse.json({ success: true, message: 'Review submitted successfully' });

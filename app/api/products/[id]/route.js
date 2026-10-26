@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+const { isAdminRequest } = require('../../../../src/utils/route-auth');
 const db = require('../../../../src/database/connection');
 const { initSchema } = require('../../../../src/database/schema');
 
@@ -71,6 +72,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
   try {
     await initSchema();
     if (db.isFallback) {
@@ -116,6 +118,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
   try {
     await initSchema();
     if (db.isFallback) {

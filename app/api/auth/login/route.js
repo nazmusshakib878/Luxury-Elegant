@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server';
 const db = require('../../../../src/database/connection');
 const { initSchema } = require('../../../../src/database/schema');
 const { verifyPassword, generateToken } = require('../../../../src/utils/security');
-const { ADMIN_EMAIL } = require('../../../../src/config/env');
+const { ADMIN_EMAIL, SECRET_CONFIGURED } = require('../../../../src/config/env');
 
 export async function POST(request) {
   try {
+    if (!SECRET_CONFIGURED) {
+      return NextResponse.json({ error: 'Authentication is unavailable until a strong production SECRET is configured.' }, { status: 503 });
+    }
     await initSchema();
     const body = await request.json();
     const email = (body.email || '').toLowerCase().trim();

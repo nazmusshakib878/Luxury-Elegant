@@ -17,11 +17,11 @@ export function CartProvider({ children }) {
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
         if (Array.isArray(parsed)) {
-          const sanitized = parsed.filter(Boolean).map((item) => ({
+          const sanitized = parsed.filter((item) => item && item.price != null && Number.isFinite(Number(item.price)) && Number(item.price) > 0).map((item) => ({
             ...item,
-            price: item.price != null && !isNaN(Number(item.price)) ? Number(item.price) : 0,
-            regularPrice: item.regularPrice != null && !isNaN(Number(item.regularPrice)) ? Number(item.regularPrice) : (item.price != null ? Number(item.price) : 0),
-            qty: item.qty != null && !isNaN(Number(item.qty)) && Number(item.qty) > 0 ? Number(item.qty) : 1,
+            price: Number(item.price),
+            regularPrice: item.regularPrice != null && Number.isFinite(Number(item.regularPrice)) ? Number(item.regularPrice) : Number(item.price),
+            qty: item.qty != null && Number.isFinite(Number(item.qty)) && Number(item.qty) > 0 ? Number(item.qty) : 1,
           }));
           setCart(sanitized);
         }
@@ -64,8 +64,9 @@ export function CartProvider({ children }) {
       );
 
       const rawPrice = product.price_now ?? product.sale_price ?? product.price;
-      const validPrice = rawPrice != null && !isNaN(Number(rawPrice)) ? Number(rawPrice) : 0;
-      const validRegular = product.price != null && !isNaN(Number(product.price)) ? Number(product.price) : validPrice;
+      const validPrice = rawPrice != null && Number.isFinite(Number(rawPrice)) && Number(rawPrice) > 0 ? Number(rawPrice) : null;
+      if (validPrice === null) return prev;
+      const validRegular = product.price != null && Number.isFinite(Number(product.price)) ? Number(product.price) : validPrice;
       const safeQty = qty != null && !isNaN(Number(qty)) && Number(qty) > 0 ? Number(qty) : 1;
 
       if (existingIndex > -1) {
@@ -82,7 +83,7 @@ export function CartProvider({ children }) {
           price: validPrice,
           regularPrice: validRegular,
           image: product.image,
-          stock: product.stock != null && !isNaN(Number(product.stock)) ? Number(product.stock) : 10,
+          stock: product.stock != null && Number.isFinite(Number(product.stock)) && Number(product.stock) >= 0 ? Number(product.stock) : null,
           variant,
           qty: safeQty,
         },

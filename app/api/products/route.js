@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
+const { isAdminRequest } = require('../../../src/utils/route-auth');
 const db = require('../../../src/database/connection');
 const { initSchema } = require('../../../src/database/schema');
 
 function getEffectivePrice(product) {
   const hasFlashSale = !product.flash_end || new Date(product.flash_end) > new Date();
-  if (product.sale_price && hasFlashSale) {
-    return +product.sale_price;
+  const regularPrice = Number(product.price);
+  const salePrice = product.sale_price == null || product.sale_price === '' ? null : Number(product.sale_price);
+  if (Number.isFinite(salePrice) && salePrice > 0 && Number.isFinite(regularPrice) && salePrice < regularPrice && hasFlashSale) {
+    return salePrice;
   }
-  return +product.price;
+  return Number.isFinite(regularPrice) && regularPrice > 0 ? regularPrice : null;
 }
 
 function shapeProduct(product) {
@@ -24,15 +27,15 @@ function shapeProduct(product) {
 
   return {
     ...product,
-    price: +product.price,
-    sale_price: product.sale_price ? +product.sale_price : null,
-    stock: +product.stock,
-    rating: product.rating !== null && product.rating !== undefined ? +product.rating : null,
-    reviews: +product.reviews || 0,
+    price: Number.isFinite(Number(product.price)) && product.price !== null ? Number(product.price) : null,
+    sale_price: product.sale_price !== null && Number.isFinite(Number(product.sale_price)) && Number.isFinite(Number(product.price)) && Number(product.sale_price) > 0 && Number(product.sale_price) < Number(product.price) ? Number(product.sale_price) : null,
+    stock: Number.isFinite(Number(product.stock)) ? Number(product.stock) : null,
+    rating: product.rating !== null && product.rating !== undefined && Number.isFinite(Number(product.rating)) && Number(product.rating) >= 0 && Number(product.rating) <= 5 ? Number(product.rating) : null,
+    reviews: Number.isFinite(Number(product.reviews)) && Number(product.reviews) >= 0 ? Number(product.reviews) : 0,
     image: imgPath,
     variants: parsedVariants,
     price_now: priceNow,
-    on_sale: priceNow < +product.price,
+    on_sale: priceNow !== null && Number.isFinite(Number(product.price)) && priceNow < Number(product.price),
   };
 }
 
@@ -103,6 +106,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
   try {
     await initSchema();
     if (db.isFallback) {
