@@ -1,5 +1,4 @@
-const fs = require('fs');
-const path = require('path');
+const seedData = require('./seed-data.json');
 
 class MemoryStore {
   constructor() {
@@ -18,15 +17,11 @@ class MemoryStore {
   loadSeed() {
     if (this.initialized) return;
     try {
-      const seedPath = path.resolve(__dirname, 'seed-data.json');
-      if (fs.existsSync(seedPath)) {
-        const data = JSON.parse(fs.readFileSync(seedPath, 'utf8'));
-        this.categories = (data.categories || []).map((c) => ({ ...c }));
-        this.products = (data.products || []).map((p) => ({ ...p }));
-        this.settings = (data.settings || []).map((s) => ({ ...s }));
-        this.coupons = (data.coupons || []).map((cp) => ({ ...cp }));
-        this.reviews = (data.reviews || []).map((r) => ({ ...r }));
-      }
+      this.categories = (seedData.categories || []).map((c) => ({ ...c }));
+      this.products = (seedData.products || []).map((p) => ({ ...p }));
+      this.settings = (seedData.settings || []).map((s) => ({ ...s }));
+      this.coupons = (seedData.coupons || []).map((cp) => ({ ...cp }));
+      this.reviews = (seedData.reviews || []).map((r) => ({ ...r }));
       this.initialized = true;
     } catch (e) {
       console.warn('MemoryStore loadSeed error:', e.message);
@@ -37,10 +32,10 @@ class MemoryStore {
     let list = this.products.map((p) => {
       const cat = this.categories.find((c) => c.id === p.cat_id);
       const prodReviews = this.reviews.filter((r) => r.product_id === p.id);
-      const rating =
-        prodReviews.length > 0
-          ? +(prodReviews.reduce((sum, r) => sum + (+r.rating || 0), 0) / prodReviews.length).toFixed(1)
-          : null;
+      const validRatings = prodReviews.map((review) => Number(review.rating)).filter((value) => Number.isFinite(value) && value >= 0 && value <= 5);
+      const rating = validRatings.length > 0
+        ? +(validRatings.reduce((sum, value) => sum + value, 0) / validRatings.length).toFixed(1)
+        : null;
       return {
         ...p,
         cat: cat ? cat.name : null,
@@ -141,7 +136,7 @@ class MemoryStore {
 
     // 1. Categories
     if (/FROM\s+categories/i.test(cleanSql)) {
-      if (/COUNT\(\*\)/i.test(cleanSql)) {
+      if (/^SELECT\s+COUNT\s*\(\s*\*\s*\)/i.test(cleanSql)) {
         return [{ count: this.categories.length, c: this.categories.length }];
       }
       return [...this.categories].sort((a, b) => a.id - b.id);
@@ -170,7 +165,7 @@ class MemoryStore {
 
     // 4. Products
     if (/FROM\s+products/i.test(cleanSql)) {
-      if (/COUNT\(\*\)/i.test(cleanSql)) {
+      if (/^SELECT\s+COUNT\s*\(\s*\*\s*\)/i.test(cleanSql)) {
         const filtered = this.queryProducts(cleanSql, params);
         return [{ count: filtered.length, c: filtered.length }];
       }
@@ -190,7 +185,7 @@ class MemoryStore {
 
     // 6. Orders
     if (/FROM\s+orders/i.test(cleanSql)) {
-      if (/COUNT\(\*\)/i.test(cleanSql)) {
+      if (/^SELECT\s+COUNT\s*\(\s*\*\s*\)/i.test(cleanSql)) {
         return [{ total_orders: this.orders.length, count: this.orders.length, c: this.orders.length }];
       }
       if (/SUM\(total\)/i.test(cleanSql)) {
@@ -216,7 +211,7 @@ class MemoryStore {
 
     // 7. Users
     if (/FROM\s+users/i.test(cleanSql)) {
-      if (/COUNT\(\*\)/i.test(cleanSql)) {
+      if (/^SELECT\s+COUNT\s*\(\s*\*\s*\)/i.test(cleanSql)) {
         return [{ count: this.users.length, c: this.users.length }];
       }
       if (/role\s*=\s*'admin'/i.test(cleanSql)) {

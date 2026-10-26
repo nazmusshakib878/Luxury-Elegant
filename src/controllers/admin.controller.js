@@ -87,15 +87,19 @@ async function parseProductPayload(body) {
 
   const sanitizeNum = (val) => {
     if (val === undefined || val === null || val === '') return null;
-    if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    const clean = String(val).replace(/[^0-9.-]/g, '');
-    const num = Number(clean);
-    return isNaN(num) ? 0 : num;
+    const num = Number(val);
+    return Number.isFinite(num) ? num : null;
   };
 
-  const price = sanitizeNum(body.price) || 0;
+  const price = sanitizeNum(body.price);
   const salePrice = sanitizeNum(body.sale_price);
-  const stock = body.stock !== undefined ? Math.max(0, parseInt(sanitizeNum(body.stock) || 0, 10)) : 0;
+  const stock = body.stock !== undefined ? sanitizeNum(body.stock) : 0;
+  if (!String(body.name || '').trim()) throw new Error('Product name is required');
+  if (price === null || price <= 0) throw new Error('A valid product price greater than zero is required');
+  if (body.sale_price !== undefined && body.sale_price !== null && body.sale_price !== '' && (salePrice === null || salePrice <= 0 || salePrice >= price)) {
+    throw new Error('Sale price must be greater than zero and lower than the regular price');
+  }
+  if (stock === null || !Number.isSafeInteger(stock) || stock < 0) throw new Error('Stock must be a non-negative whole number');
 
   let image = typeof body.image === 'string' ? body.image.trim() : '';
   if (image && !image.startsWith('http://') && !image.startsWith('https://') && !image.startsWith('data:') && !image.startsWith('/')) {
@@ -128,10 +132,6 @@ exports.getProducts = async (req, res) => {
 };
 
 exports.createProduct = async (req, res) => {
-  if (!req.body.name) {
-    throw new Error('Product name is required');
-  }
-
   const params = await parseProductPayload(req.body);
   const result = await db.run(`
     INSERT INTO products (name, cat_id, price, sale_price, stock, image, description, variants, flash_end, active)

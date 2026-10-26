@@ -117,20 +117,28 @@ export async function POST(request) {
     }
     const body = await request.json();
     const { name, cat_id, price, sale_price, stock, image, description, variants } = body;
-
-    if (!name || !price) {
-      return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
+    const numericPrice = price === null || price === undefined || price === '' ? null : Number(price);
+    const numericSalePrice = sale_price === null || sale_price === undefined || sale_price === '' ? null : Number(sale_price);
+    const numericStock = stock === null || stock === undefined || stock === '' ? 0 : Number(stock);
+    if (typeof name !== 'string' || !name.trim() || !Number.isFinite(numericPrice) || numericPrice <= 0) {
+      return NextResponse.json({ error: 'A product name and valid price greater than zero are required' }, { status: 400 });
+    }
+    if (numericSalePrice !== null && (!Number.isFinite(numericSalePrice) || numericSalePrice <= 0 || numericSalePrice >= numericPrice)) {
+      return NextResponse.json({ error: 'Sale price must be greater than zero and below the regular price' }, { status: 400 });
+    }
+    if (!Number.isSafeInteger(numericStock) || numericStock < 0) {
+      return NextResponse.json({ error: 'Stock must be a non-negative whole number' }, { status: 400 });
     }
 
     const res = await db.run(
       `INSERT INTO products (name, cat_id, price, sale_price, stock, image, description, variants)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        name,
+        name.trim(),
         cat_id || null,
-        +price,
-        sale_price ? +sale_price : null,
-        +stock || 0,
+        numericPrice,
+        numericSalePrice,
+        numericStock,
         image || '',
         description || '',
         typeof variants === 'object' ? JSON.stringify(variants) : (variants || '{}'),

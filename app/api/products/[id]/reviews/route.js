@@ -30,7 +30,11 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Review comment is required' }, { status: 400 });
     }
 
-    const cleanRating = Math.max(1, Math.min(5, Math.round(+rating || 5)));
+    const numericRating = Number(rating);
+    if (!Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) {
+      return NextResponse.json({ error: 'Rating must be between 1 and 5.' }, { status: 400 });
+    }
+    const cleanRating = Math.round(numericRating);
 
     await db.run(
       'INSERT INTO reviews (product_id, user_name, rating, comment) VALUES (?, ?, ?, ?)',

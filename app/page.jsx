@@ -37,7 +37,7 @@ export default function HomePage() {
   const { addToCart, wishlist, toggleWishlist, setIsDrawerOpen, showToast } = useCart();
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedCat, setSelectedCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('default');
@@ -64,6 +64,7 @@ export default function HomePage() {
   // Fetch products and categories on mount or when filter changes
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     async function loadData() {
       try {
         const params = new URLSearchParams();

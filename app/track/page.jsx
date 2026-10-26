@@ -293,7 +293,7 @@ export default function OrderTrackingPage() {
                         <div style={{ fontSize: '0.78rem', color: '#78716c' }}>Quantity: {item.qty}</div>
                       </div>
                       <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f3d2e' }}>
-                        ৳{formatPrice((+item.price || 0) * (item.qty || 1))}
+                        ৳{item.price != null && Number.isFinite(Number(item.price)) ? formatPrice(Number(item.price) * Number(item.qty || 1)) : 'Price unavailable'}
                       </div>
                     </div>
                   ))}

@@ -10,7 +10,7 @@ export async function GET() {
 
   try {
     await initSchema();
-    const u = await db.get('SELECT COUNT(*) as c FROM users');
+    const u = db.isFallback ? null : await db.get('SELECT COUNT(*) as c FROM users');
     const p = await db.get('SELECT COUNT(*) as c FROM products');
     userCount = +(u?.c || u?.count || 0);
     productCount = +(p?.c || p?.count || 0);

@@ -30,19 +30,15 @@ export default function CartDrawer() {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [method, setMethod] = useState('cod');
-  const [trxId, setTrxId] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   if (!isDrawerOpen) return null;
 
-  const subtotal = cart.reduce((sum, item) => {
-    const itemPrice = item && item.price != null && !isNaN(Number(item.price)) ? Number(item.price) : 0;
-    const itemQty = item && item.qty != null && !isNaN(Number(item.qty)) ? Number(item.qty) : 1;
-    return sum + itemPrice * itemQty;
-  }, 0);
-  const discountAmount = Math.round((subtotal * couponDiscountPercent) / 100);
-  const shippingFee = subtotal >= 3000 ? 0 : area === 'dhaka' ? 60 : 120;
-  const grandTotal = Math.max(0, subtotal - discountAmount + shippingFee);
+  const hasValidCart = cart.every((item) => Number.isFinite(Number(item?.price)) && Number(item.price) > 0 && Number.isSafeInteger(Number(item?.qty)) && Number(item.qty) > 0);
+  const subtotal = hasValidCart ? cart.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0) : null;
+  const discountAmount = subtotal === null ? 0 : Math.round((subtotal * couponDiscountPercent) / 100);
+  const shippingFee = subtotal === null ? null : subtotal >= 3000 ? 0 : area === 'dhaka' ? 60 : 120;
+  const grandTotal = subtotal === null ? null : Math.max(0, subtotal - discountAmount + shippingFee);
 
   const applySpecificCoupon = async (codeToApply) => {
     setIsApplyingCoupon(true);
@@ -93,7 +89,6 @@ export default function CartDrawer() {
         })),
         coupon: couponAppliedCode || null,
         method,
-        trx_id: trxId.trim() || null,
       };
 
       const res = await fetch('/api/orders', {
@@ -126,7 +121,7 @@ export default function CartDrawer() {
   };
 
   const freeShippingThreshold = 3000;
-  const progressPercent = Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100));
+  const progressPercent = subtotal === null ? 0 : Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100));
 
   return (
     <>
@@ -235,7 +230,9 @@ export default function CartDrawer() {
         {step === 'cart' && cart.length > 0 && (
           <div style={{ padding: '0.75rem 1.5rem', backgroundColor: '#f0fdf4', borderBottom: '1px solid #bbf7d0', fontSize: '0.8rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', color: '#166534', fontWeight: 600 }}>
-              {subtotal >= freeShippingThreshold ? (
+              {subtotal === null ? (
+                <span>Verify cart item pricing before checkout</span>
+              ) : subtotal >= freeShippingThreshold ? (
                 <span>✓ Complimentary White-Glove Delivery Unlocked!</span>
               ) : (
                 <span>Add ৳{formatPrice(Math.max(0, freeShippingThreshold - subtotal))} more for Free Delivery</span>
@@ -358,7 +355,7 @@ export default function CartDrawer() {
                         </div>
                       </div>
                       <div style={{ fontWeight: 700, color: '#0f3d2e', fontSize: '1rem', whiteSpace: 'nowrap' }}>
-                        ৳{formatPrice((item.price || 0) * (item.qty || 1))}
+                        ৳{item.price != null && Number.isFinite(Number(item.price)) ? formatPrice(Number(item.price) * Number(item.qty || 1)) : 'Price unavailable'}
                       </div>
                     </div>
                   ))}
@@ -560,39 +557,22 @@ export default function CartDrawer() {
                       backgroundColor: '#ffffff',
                       borderRadius: '0.75rem',
                       border: method === 'online' ? '2px solid #0f3d2e' : '1px solid #d6d3d1',
-                      cursor: 'pointer',
+                      cursor: 'not-allowed',
+                      opacity: 0.65,
                     }}
                   >
                     <input
                       type="radio"
                       name="payment_method"
                       checked={method === 'online'}
-                      onChange={() => setMethod('online')}
+                      disabled
                     />
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1c1917' }}>bKash / Nagad / Card Payment</div>
-                      <div style={{ fontSize: '0.78rem', color: '#78716c' }}>Send payment to official merchant account & enter TrxID</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1c1917' }}>Online Payment Temporarily Unavailable</div>
+                      <div style={{ fontSize: '0.78rem', color: '#78716c' }}>A verified payment gateway is not configured yet.</div>
                     </div>
                   </label>
 
-                  {method === 'online' && (
-                    <div style={{ padding: '0.85rem', backgroundColor: '#f0fdf4', borderRadius: '0.75rem', border: '1px solid #bbf7d0', fontSize: '0.82rem' }}>
-                      <div style={{ fontWeight: 700, color: '#166534', marginBottom: '0.3rem' }}>
-                        Merchant bKash / Nagad Number: <strong>01700-000000</strong>
-                      </div>
-                      <div style={{ color: '#44403c', marginBottom: '0.5rem' }}>
-                        Please Send Money ৳{formatPrice(grandTotal)} and enter Transaction ID (TrxID) below:
-                      </div>
-                      <input
-                        type="text"
-                        value={trxId}
-                        onChange={(e) => setTrxId(e.target.value)}
-                        placeholder="e.g. 9J4K2L1M90"
-                        className="inp"
-                        style={{ padding: '0.45rem 0.75rem', fontSize: '0.85rem' }}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -607,7 +587,7 @@ export default function CartDrawer() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || grandTotal === null}
                   className="btn btn-gold"
                   style={{ flex: 2 }}
                 >
@@ -714,7 +694,7 @@ export default function CartDrawer() {
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#78716c' }}>
               <span>Delivery ({subtotal >= freeShippingThreshold ? 'Complimentary ✦' : area === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'}):</span>
               <span style={{ fontWeight: 700, color: shippingFee === 0 ? '#10b981' : '#1c1917' }}>
-                {shippingFee === 0 ? 'FREE' : `৳${shippingFee}`}
+                {shippingFee === null ? 'Unavailable' : shippingFee === 0 ? 'FREE' : `৳${shippingFee}`}
               </span>
             </div>
 

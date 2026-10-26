@@ -17,9 +17,10 @@ exports.renderInvoice = async (req, res) => {
   }
 
   const settings = await getStoreSettings();
-  const items = [];
+  let items = [];
   try {
-    items = JSON.parse(order.items || '[]');
+    const parsedItems = typeof order.items === 'string' ? JSON.parse(order.items || '[]') : order.items;
+    items = Array.isArray(parsedItems) ? parsedItems.filter((item) => item && typeof item === 'object') : [];
   } catch {}
 
   // Escape HTML to prevent stored XSS from order/customer-entered data
@@ -30,6 +31,12 @@ exports.renderInvoice = async (req, res) => {
       '>': '&gt;',
       '"': '&quot;',
     }[c]));
+
+  const money = (value) => {
+    if (value === null || value === undefined || value === '') return '—';
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? Math.round(numericValue).toLocaleString('en-IN') : '—';
+  };
 
   const html = `<!doctype html>
 <html lang="en">
@@ -187,19 +194,19 @@ exports.renderInvoice = async (req, res) => {
               <b>${esc(i.name)}</b>
               ${i.variant ? `<br><small style="color:#78716c">${esc(i.variant)}</small>` : ''}
             </td>
-            <td class="r">৳${Math.round(i.price).toLocaleString('en-IN')}</td>
-            <td class="r">${i.qty}</td>
-            <td class="r">৳${Math.round(i.price * i.qty).toLocaleString('en-IN')}</td>
+            <td class="r">৳${money(i.price)}</td>
+            <td class="r">${esc(i.qty)}</td>
+            <td class="r">৳${money(i.price == null ? null : Number(i.price) * Number(i.qty))}</td>
           </tr>
         `).join('')}
       </tbody>
     </table>
 
     <div class="summary-box">
-      <div>Subtotal: ৳${Math.round(order.subtotal).toLocaleString('en-IN')}</div>
-      ${order.discount ? `<div style="color:#15803d">Discount: −৳${Math.round(order.discount).toLocaleString('en-IN')}</div>` : ''}
-      <div>Shipping: ${order.shipping ? `৳${order.shipping}` : 'Free'}</div>
-      <div class="total-row">Total: ৳${Math.round(order.total).toLocaleString('en-IN')}</div>
+      <div>Subtotal: ৳${money(order.subtotal)}</div>
+      ${Number(order.discount) > 0 ? `<div style="color:#15803d">Discount: −৳${money(order.discount)}</div>` : ''}
+      <div>Shipping: ${Number(order.shipping) > 0 ? `৳${money(order.shipping)}` : 'Free'}</div>
+      <div class="total-row">Total: ৳${money(order.total)}</div>
       <div style="margin-top: 10px;">
         Payment: <b>${esc(order.method).toUpperCase()}</b> · Status: <span class="badge">${esc(order.payment_status)}</span>
       </div>

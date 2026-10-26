@@ -139,7 +139,7 @@ export default function InvoicePage() {
               <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600 }}>{item.qty}</td>
               <td style={{ padding: '1rem', textAlign: 'right', color: '#44403c' }}>৳{formatPrice(item.price)}</td>
               <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: '#0f3d2e' }}>
-                ৳{formatPrice((+item.price || 0) * (item.qty || 1))}
+                ৳{item.price != null && Number.isFinite(Number(item.price)) ? formatPrice(Number(item.price) * Number(item.qty || 1)) : 'Price unavailable'}
               </td>
             </tr>
           ))}

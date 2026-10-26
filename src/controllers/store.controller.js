@@ -1,5 +1,5 @@
 const db = require('../database/connection');
-const { BASE_URL } = require('../config/env');
+const { BASE_URL, SECRET_CONFIGURED } = require('../config/env');
 const { DEFAULT_SETTINGS } = require('../config/constants');
 const { hashPassword, verifyPassword, generateToken } = require('../utils/security');
 const { initiatePayment, verifyPayment } = require('../services/payment');
@@ -137,14 +137,15 @@ exports.getProductById = async (req, res) => {
 
 exports.addReview = async (req, res) => {
   const { rating, comment } = req.body;
-  if (!rating || rating < 1 || rating > 5) {
+  const numericRating = Number(rating);
+  if (!Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) {
     throw new Error('Rating must be between 1 and 5');
   }
 
   await db.run('INSERT INTO reviews (product_id, user_name, rating, comment) VALUES (?, ?, ?, ?)', [
     req.params.id,
     req.user.name,
-    rating,
+    numericRating,
     comment || '',
   ]);
 
@@ -186,6 +187,9 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
+  if (!SECRET_CONFIGURED) {
+    return res.status(503).json({ error: 'Authentication is unavailable until a strong production SECRET is configured.' });
+  }
   const { email, password } = req.body;
   const user = await db.get('SELECT * FROM users WHERE email = ?', [String(email || '').toLowerCase()]);
 
@@ -315,13 +319,12 @@ exports.createOrder = async (req, res) => {
   // Handle Online Payment Initiation
   if (paymentMethod === 'sslcommerz' || paymentMethod === 'aamarpay') {
     const paymentUrl = await initiatePayment({
-      gateway: paymentMethod,
-      orderId,
-      amount: total,
-      customerName: cleanName,
-      customerPhone: cleanPhone,
-      customerAddress: cleanAddress,
-    });
+      id: orderId,
+      total,
+      name: cleanName,
+      phone: cleanPhone,
+      address: cleanAddress,
+    }, paymentMethod);
 
     if (paymentUrl) {
       return res.json({ id: orderId, redirect: paymentUrl });
@@ -378,17 +381,20 @@ exports.requestReturn = async (req, res) => {
 exports.handlePaymentCallback = async (req, res) => {
   const { gw, res: resultType } = req.params;
   const payload = req.method === 'POST' ? req.body : req.query;
+  const transactionId = String(payload.tran_id || payload.mer_txnid || '');
+  const orderId = transactionId.match(/^ORD(\d+)$/i)?.[1] || (/^\d+$/.test(transactionId) ? transactionId : null);
+  if (!orderId) return res.status(400).send('Invalid payment reference');
 
-  const isVerified = await verifyPayment(gw, payload);
-  const orderId = payload.tran_id || payload.mer_txnid;
+  const order = await db.get('SELECT * FROM orders WHERE id = ?', [orderId]);
+  if (!order) return res.status(404).send('Order not found');
+  const expectedMethod = gw === 'ssl' ? 'sslcommerz' : gw === 'aamar' ? 'aamarpay' : null;
+  if (!expectedMethod || order.method !== expectedMethod) return res.status(400).send('Payment gateway does not match this order');
 
-  if (isVerified && orderId) {
-    await db.run('UPDATE orders SET payment_status = ? WHERE id = ?', ['paid', orderId]);
-  } else if (orderId) {
-    await db.run('UPDATE orders SET payment_status = ? WHERE id = ?', [
-      resultType === 'cancel' ? 'cancelled' : 'failed',
-      orderId,
-    ]);
+  const isVerified = await verifyPayment(gw, payload, order);
+  if (isVerified) {
+    await db.run("UPDATE orders SET payment_status = 'paid' WHERE id = ? AND method = ?", [orderId, expectedMethod]);
+  } else if (['cancel', 'fail'].includes(resultType)) {
+    await db.run('UPDATE orders SET payment_status = ? WHERE id = ? AND payment_status != ?', [resultType === 'cancel' ? 'cancelled' : 'failed', orderId, 'paid']);
   }
 
   res.redirect(`/#/track/${orderId}?paid=${isVerified ? 1 : 0}`);

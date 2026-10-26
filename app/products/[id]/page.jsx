@@ -103,6 +103,7 @@ export default function ProductDetailPage() {
   }
 
   const { product, reviews = [] } = data;
+  const pricing = getProductPricing(product);
 
   return (
     <>
@@ -217,17 +218,16 @@ export default function ProductDetailPage() {
             {/* Rating summary */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
               <span style={{ color: '#c8a24a' }}>★</span>
-              <span style={{ fontWeight: 700, color: '#1c1917' }}>{product.rating || '4.9'}</span>
-              <span style={{ color: '#78716c' }}>({reviews.length || 18} authenticated client reviews)</span>
+              {product.rating !== null && product.rating !== undefined && <span style={{ fontWeight: 700, color: '#1c1917' }}>{Number(product.rating).toFixed(1)}</span>}
+              <span style={{ color: '#78716c' }}>({reviews.length} authenticated client reviews)</span>
             </div>
 
             {/* Pricing */}
             {(() => {
-              const pricing = getProductPricing(product);
               return (
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.85rem', marginBottom: '1.25rem' }}>
                   <span style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0f3d2e' }}>
-                    ৳{pricing.formattedCurrent}
+                    ৳{pricing.priceNow !== null ? pricing.formattedCurrent : 'Price unavailable'}
                   </span>
                   {pricing.onSale && pricing.formattedRegular && (
                     <span style={{ fontSize: '1.25rem', color: '#a8a29e', textDecoration: 'line-through' }}>
@@ -292,10 +292,11 @@ export default function ProductDetailPage() {
 
                 <button
                   onClick={() => addToCart(product, qty)}
+                  disabled={pricing.priceNow === null}
                   className="btn btn-p"
                   style={{ flex: 1, padding: '0.85rem 1.5rem', fontSize: '1rem' }}
                 >
-                  🛍️ Add to Collection (৳{formatPrice(((product.price_now ?? product.price) || 0) * qty)})
+                  {pricing.priceNow !== null ? `🛍️ Add to Collection (৳${formatPrice(pricing.priceNow * qty)})` : 'Price unavailable'}
                 </button>
               </div>
 
@@ -305,6 +306,7 @@ export default function ProductDetailPage() {
                   addToCart(product, qty);
                   setIsDrawerOpen(true);
                 }}
+                disabled={pricing.priceNow === null}
                 className="btn btn-gold"
                 style={{ width: '100%', padding: '0.85rem', fontSize: '1rem', boxShadow: '0 8px 20px rgba(200, 162, 74, 0.3)' }}
               >
@@ -407,7 +409,7 @@ export default function ProductDetailPage() {
                     <div key={i} style={{ padding: '1.25rem', backgroundColor: '#faf7f2', borderRadius: '1rem', border: '1px solid #e7e5e4' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
                         <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1c1917' }}>{r.user_name}</span>
-                        <span style={{ color: '#c8a24a', fontSize: '0.85rem' }}>{'★'.repeat(r.rating || 5)}</span>
+                        <span style={{ color: '#c8a24a', fontSize: '0.85rem' }}>{'★'.repeat(Number.isFinite(Number(r.rating)) && Number(r.rating) >= 0 && Number(r.rating) <= 5 ? Math.round(Number(r.rating)) : 0)}</span>
                       </div>
                       <p style={{ margin: 0, fontSize: '0.88rem', color: '#44403c', lineHeight: 1.5 }}>{r.comment}</p>
                     </div>

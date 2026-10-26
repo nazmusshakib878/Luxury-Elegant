@@ -3,6 +3,7 @@ const { DB_FILE, DATABASE_URL } = require('../config/env');
 
 let pgPool = null;
 let sqliteDb = null;
+let sqliteQueue = Promise.resolve();
 const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 const usePostgres = Boolean(DATABASE_URL);
 let pgUnavailable = false;
@@ -77,6 +78,28 @@ function switchToReadOnlyCatalog(err) {
   console.error('Persistent PostgreSQL is unavailable; serving the read-only catalog preview.', err?.message || 'connection failed');
 }
 
+function serializeSqlite(operation) {
+  const result = sqliteQueue.then(operation);
+  sqliteQueue = result.catch(() => {});
+  return result;
+}
+
+function createTransactionAdapter(query) {
+  return {
+    async all(sql, params = []) {
+      const result = await query(sql, params, 'all');
+      return result;
+    },
+    async get(sql, params = []) {
+      const result = await query(sql, params, 'get');
+      return result;
+    },
+    async run(sql, params = []) {
+      return query(sql, params, 'run');
+    },
+  };
+}
+
 const db = {
   get isPostgres() { return usePostgres && !pgUnavailable; },
   isVercel,
@@ -105,7 +128,7 @@ const db = {
       }
     }
     if (sqliteDb) {
-      return sqliteDb.prepare(sql).all(...params);
+      return serializeSqlite(() => sqliteDb.prepare(sql).all(...params));
     }
     if (/^\s*SELECT\s+/i.test(sql) && /\bFROM\s+(users|orders|abandoned)\b/i.test(sql)) {
       throw new Error('Persistent database required for customer and order records.');
@@ -133,7 +156,7 @@ const db = {
       }
     }
     if (sqliteDb) {
-      return sqliteDb.prepare(sql).get(...params);
+      return serializeSqlite(() => sqliteDb.prepare(sql).get(...params));
     }
     if (/^\s*SELECT\s+/i.test(sql) && /\bFROM\s+(users|orders|abandoned)\b/i.test(sql)) {
       throw new Error('Persistent database required for customer and order records.');
@@ -153,7 +176,7 @@ const db = {
       };
     }
     if (sqliteDb) {
-      return sqliteDb.prepare(sql).run(...params);
+      return serializeSqlite(() => sqliteDb.prepare(sql).run(...params));
     }
     throw new Error(
       'DATABASE_READ_ONLY: The store is currently running in showcase fallback mode. Orders, mutations, and database writes are disabled until a persistent PostgreSQL database is connected.'
@@ -167,7 +190,7 @@ const db = {
       catch (err) { switchToReadOnlyCatalog(err); throw err; }
     }
     if (sqliteDb) {
-      return sqliteDb.exec(sql);
+      return serializeSqlite(() => sqliteDb.exec(sql));
     }
     return;
   },
@@ -178,6 +201,60 @@ const db = {
       get: (...params) => this.get(sql, params),
       run: (...params) => this.run(sql, params),
     };
+  },
+
+  async transaction(callback) {
+    if (typeof callback !== 'function') throw new TypeError('Transaction callback is required.');
+    if (pgUnavailable || this.isFallback) throw new Error('Persistent database is unavailable; transactions are disabled in read-only catalog preview mode.');
+
+    if (usePostgres) {
+      let client;
+      try {
+        client = await pgPool.connect();
+        await client.query('BEGIN');
+        const tx = createTransactionAdapter(async (sql, params, mode) => {
+          const result = await client.query(toPgSql(sql), params);
+          if (mode === 'all') return result.rows;
+          if (mode === 'get') return result.rows[0];
+          return { changes: result.rowCount, lastInsertRowid: result.rows[0]?.id || null };
+        });
+        const result = await callback(tx);
+        await client.query('COMMIT');
+        return result;
+      } catch (err) {
+        if (client) {
+          try { await client.query('ROLLBACK'); } catch {}
+        }
+        if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT' || err.code === 'ENOTFOUND' || err.code === 'ECONNRESET') {
+          switchToReadOnlyCatalog(err);
+        }
+        throw err;
+      } finally {
+        client?.release();
+      }
+    }
+
+    if (sqliteDb) {
+      return serializeSqlite(async () => {
+        sqliteDb.exec('BEGIN IMMEDIATE');
+        const tx = createTransactionAdapter((sql, params, mode) => {
+          const statement = sqliteDb.prepare(sql);
+          if (mode === 'all') return statement.all(...params);
+          if (mode === 'get') return statement.get(...params);
+          const result = statement.run(...params);
+          return { changes: result.changes, lastInsertRowid: result.lastInsertRowid };
+        });
+        try {
+          const result = await callback(tx);
+          sqliteDb.exec('COMMIT');
+          return result;
+        } catch (err) {
+          try { sqliteDb.exec('ROLLBACK'); } catch {}
+          throw err;
+        }
+      });
+    }
+    throw new Error('No persistent database is available for transactions.');
   },
 };
 

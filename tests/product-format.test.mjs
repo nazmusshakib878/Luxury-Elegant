@@ -41,7 +41,16 @@ test('showcase fallback serves catalog data and refuses customer records and wri
 
   assert.equal(db.isFallback, true);
   const products = await db.all('SELECT * FROM products WHERE active = 1');
-  assert.ok(products.length > 0);
+  assert.equal(products.length, 16);
+  const categories = await db.all('SELECT * FROM categories ORDER BY id ASC');
+  assert.equal(categories.length, 4);
+  const storefrontQuery = await db.all(`
+    SELECT p.*, c.name AS cat,
+      (SELECT ROUND(AVG(rating), 1) FROM reviews WHERE product_id = p.id) AS rating,
+      (SELECT COUNT(*) FROM reviews WHERE product_id = p.id) AS reviews
+    FROM products p LEFT JOIN categories c ON c.id = p.cat_id WHERE p.active = 1
+  `);
+  assert.equal(storefrontQuery.length, 16);
   await assert.rejects(db.get("SELECT * FROM users WHERE role = 'admin' LIMIT 1"), /Persistent database required/);
   await assert.rejects(db.run('INSERT INTO orders (name) VALUES (?)', ['Customer']), /persistent PostgreSQL/);
 });
