@@ -211,27 +211,28 @@ export default function ProductAtelier3D() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
             position: 'relative',
           }}
         >
           {/* Left: 3D Canvas Target Wrapper */}
-          <div style={{ position: 'relative', overflow: 'hidden', minHeight: '440px' }}>
+          <div style={{ position: 'relative', overflow: 'hidden', minHeight: '380px' }}>
             <div
               id="atelier-canvas-wrapper"
               ref={containerRef}
               className="atelier-canvas-wrapper"
-              style={{ width: '100%', height: '520px', minHeight: '420px', position: 'relative' }}
+              style={{ width: '100%', height: '520px', minHeight: '380px', position: 'relative' }}
             />
 
             {/* Floating 3D Interaction Control Overlay */}
             <div
               style={{
                 position: 'absolute',
-                bottom: '1.25rem',
-                left: '1.25rem',
-                right: '1.25rem',
+                bottom: 'clamp(0.6rem, 2vw, 1.25rem)',
+                left: 'clamp(0.5rem, 2vw, 1.25rem)',
+                right: 'clamp(0.5rem, 2vw, 1.25rem)',
                 display: 'flex',
+                flexWrap: 'wrap',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 gap: '0.5rem',
@@ -325,7 +326,7 @@ export default function ProductAtelier3D() {
           <div
             id="react-atelier-specs-card"
             style={{
-              padding: '2rem',
+              padding: 'clamp(1.2rem, 3vw, 2rem)',
               backgroundColor: 'rgba(10, 26, 19, 0.88)',
               backdropFilter: 'blur(16px)',
               display: 'flex',
@@ -356,7 +357,7 @@ export default function ProductAtelier3D() {
               <h3
                 className="font-serif"
                 style={{
-                  fontSize: '1.85rem',
+                  fontSize: 'clamp(1.4rem, 3vw, 1.85rem)',
                   fontWeight: 700,
                   color: '#ffffff',
                   margin: '0 0 0.5rem',
@@ -382,7 +383,7 @@ export default function ProductAtelier3D() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 130px), 1fr))',
                   gap: '0.75rem',
                   marginBottom: '1.5rem',
                 }}

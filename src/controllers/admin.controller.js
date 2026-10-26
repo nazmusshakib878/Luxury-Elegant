@@ -40,15 +40,15 @@ exports.getStats = async (req, res) => {
       } catch {}
     });
 
-  const revenueRow = await db.get(`SELECT IFNULL(SUM(total), 0) AS v FROM orders WHERE ${liveFilter}`);
-  const todayRow = await db.get(`SELECT IFNULL(SUM(total), 0) AS v FROM orders WHERE ${liveFilter} AND DATE(created) = DATE('now')`);
+  const revenueRow = await db.get(`SELECT COALESCE(SUM(total), 0) AS v FROM orders WHERE ${liveFilter}`);
+  const todayRow = await db.get(`SELECT COALESCE(SUM(total), 0) AS v FROM orders WHERE ${liveFilter} AND DATE(created) = CURRENT_DATE`);
   const customerRow = await db.get("SELECT COUNT(*) AS v FROM users WHERE role = 'customer'");
 
   const byStatus = await db.all('SELECT status, COUNT(*) AS n FROM orders GROUP BY status');
   const days = await db.all(`
     SELECT DATE(created) AS d, SUM(total) AS v 
     FROM orders 
-    WHERE ${liveFilter} AND created >= DATE('now', '-6 day') 
+    WHERE ${liveFilter} AND created >= CURRENT_DATE - INTERVAL '6 days' 
     GROUP BY d
   `);
 

@@ -102,7 +102,7 @@ export default function CartDrawer() {
         throw new Error(data.error || 'Failed to place order');
       }
 
-      setPlacedOrder(data);
+      setPlacedOrder({ ...data, phone });
       setStep('success');
       clearCart();
       showToast(`Order #${data.order_id} confirmed successfully!`);
@@ -655,7 +655,7 @@ export default function CartDrawer() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <Link
-                  href={`/invoice/${placedOrder.order_id}`}
+                  href={`/invoice/${placedOrder.order_id}?phone=${encodeURIComponent(placedOrder.phone)}`}
                   target="_blank"
                   className="btn btn-gold"
                   style={{ width: '100%' }}

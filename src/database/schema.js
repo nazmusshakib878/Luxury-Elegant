@@ -288,6 +288,12 @@ async function initSchema() {
           ]);
           console.log(`✅ SQLite Admin account created: ${ADMIN_EMAIL}`);
         }
+      } else {
+        // 3. Resilient In-Memory Fallback (Vercel without PostgreSQL configured)
+        if (typeof db.getMemoryStore === 'function') {
+          db.getMemoryStore();
+        }
+        console.log('🌿 [CATALOG READY] Running in resilient in-memory fallback mode with full catalog.');
       }
     } catch (err) {
       console.error('Database schema initialization error:', err.message);

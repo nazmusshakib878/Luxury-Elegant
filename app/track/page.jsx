@@ -162,7 +162,7 @@ export default function OrderTrackingPage() {
                 </span>
               </div>
               <Link
-                href={`/invoice/${order.id}`}
+                href={`/invoice/${order.id}?phone=${order.phone}`}
                 target="_blank"
                 className="btn btn-gold"
                 style={{ fontSize: '0.8rem', padding: '0.45rem 1rem' }}
@@ -331,7 +331,7 @@ export default function OrderTrackingPage() {
                   💬 WhatsApp Concierge
                 </a>
                 <Link
-                  href={`/invoice/${order.id}`}
+                  href={`/invoice/${order.id}?phone=${order.phone}`}
                   target="_blank"
                   className="btn btn-gold"
                   style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
@@ -343,33 +343,6 @@ export default function OrderTrackingPage() {
           </div>
         )}
       </main>
-
-      {/* Luxury Footer */}
-      <footer
-        style={{
-          backgroundColor: '#0c3125',
-          color: '#ffffff',
-          padding: '3rem 1.25rem 2rem',
-          marginTop: '6rem',
-          borderTop: '2px solid rgba(200, 162, 74, 0.4)',
-        }}
-      >
-        <div style={{ maxWidth: '80rem', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <div className="font-serif" style={{ fontSize: '1.4rem', fontWeight: 700, color: '#ffffff' }}>
-              <span style={{ color: '#c8a24a' }}>✦</span> Luxury &amp; Elegant
-            </div>
-            <div style={{ fontSize: '0.8rem', color: '#a8a29e', marginTop: '0.25rem' }}>
-              &copy; {new Date().getFullYear()} Luxury &amp; Elegant Atelier Ltd.
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
-            <Link href="/" style={{ color: '#e7e5e4', textDecoration: 'none' }}>Storefront</Link>
-            <Link href="/track" style={{ color: '#c8a24a', textDecoration: 'none' }}>Track Order</Link>
-            <Link href="/admin" style={{ color: '#e7e5e4', textDecoration: 'none' }}>Admin</Link>
-          </div>
-        </div>
-      </footer>
     </>
   );
 }

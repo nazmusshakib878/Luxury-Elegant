@@ -58,11 +58,22 @@ function toPgSql(sql) {
   return converted;
 }
 
+const MemoryStore = require('./memory-store');
+let memoryStore = null;
+function getMemoryStore() {
+  if (!memoryStore) {
+    memoryStore = new MemoryStore();
+  }
+  return memoryStore;
+}
+
 const db = {
   isPostgres: usePostgres,
   isVercel,
+  isFallback: !usePostgres && !sqliteDb,
   pool: pgPool,
   sqlite: sqliteDb,
+  getMemoryStore,
 
   async all(sql, params = []) {
     if (usePostgres) {
@@ -72,7 +83,7 @@ const db = {
     if (sqliteDb) {
       return sqliteDb.prepare(sql).all(...params);
     }
-    throw new Error('DATABASE_URL is required for production deployment on Vercel. Please set DATABASE_URL or POSTGRES_URL in your Vercel Project Settings.');
+    return getMemoryStore().all(sql, params);
   },
 
   async get(sql, params = []) {
@@ -83,7 +94,7 @@ const db = {
     if (sqliteDb) {
       return sqliteDb.prepare(sql).get(...params);
     }
-    throw new Error('DATABASE_URL is required for production deployment on Vercel. Please set DATABASE_URL or POSTGRES_URL in your Vercel Project Settings.');
+    return getMemoryStore().get(sql, params);
   },
 
   async run(sql, params = []) {
@@ -97,7 +108,7 @@ const db = {
     if (sqliteDb) {
       return sqliteDb.prepare(sql).run(...params);
     }
-    throw new Error('DATABASE_URL is required for production deployment on Vercel. Please set DATABASE_URL or POSTGRES_URL in your Vercel Project Settings.');
+    return getMemoryStore().run(sql, params);
   },
 
   async exec(sql) {
@@ -107,7 +118,7 @@ const db = {
     if (sqliteDb) {
       return sqliteDb.exec(sql);
     }
-    throw new Error('DATABASE_URL is required for production deployment on Vercel. Please set DATABASE_URL or POSTGRES_URL in your Vercel Project Settings.');
+    return getMemoryStore().exec(sql);
   },
 
   prepare(sql) {

@@ -6,9 +6,15 @@ export async function GET(request, { params }) {
   try {
     await initSchema();
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const phone = searchParams.get('phone');
     const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    // Guard against information disclosure: the requester must own this order
+    if (!phone || String(order.phone) !== String(phone)) {
+      return NextResponse.json({ error: 'This invoice is not available for the provided details' }, { status: 404 });
     }
     return NextResponse.json({
       ...order,

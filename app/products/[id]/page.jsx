@@ -121,11 +121,11 @@ export default function ProductDetailPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '3rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+            gap: 'clamp(1.5rem, 3vw, 3rem)',
             backgroundColor: '#ffffff',
-            borderRadius: '2rem',
-            padding: '2.5rem',
+            borderRadius: 'clamp(1.2rem, 3vw, 2rem)',
+            padding: 'clamp(1.2rem, 3vw, 2.5rem)',
             border: '1px solid #e7e5e4',
             boxShadow: '0 15px 40px rgba(0,0,0,0.04)',
           }}
@@ -240,7 +240,7 @@ export default function ProductDetailPage() {
             </p>
 
             {/* Privilege Guarantee Badges */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.75rem', backgroundColor: '#faf7f2', padding: '1rem', borderRadius: '1rem', border: '1px solid #e7e5e4' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '0.75rem', marginBottom: '1.75rem', backgroundColor: '#faf7f2', padding: '1rem', borderRadius: '1rem', border: '1px solid #e7e5e4' }}>
               <div style={{ fontSize: '0.82rem', color: '#0f3d2e', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <span>🛡️</span> <strong>2-Year Atelier Warranty</strong>
               </div>
@@ -480,7 +480,7 @@ export default function ProductDetailPage() {
               </Link>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
+            <div className="responsive-product-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap: '1.5rem' }}>
               {relatedProducts.map((p) => (
                 <div key={p.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
                   <div style={{ position: 'relative', paddingTop: '85%', overflow: 'hidden', backgroundColor: '#f5f5f4' }}>
@@ -519,33 +519,6 @@ export default function ProductDetailPage() {
           </section>
         )}
       </main>
-
-      {/* Footer */}
-      <footer
-        style={{
-          backgroundColor: '#0c3125',
-          color: '#ffffff',
-          padding: '3rem 1.25rem 2rem',
-          marginTop: '6rem',
-          borderTop: '2px solid rgba(200, 162, 74, 0.4)',
-        }}
-      >
-        <div style={{ maxWidth: '80rem', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <div className="font-serif" style={{ fontSize: '1.4rem', fontWeight: 700, color: '#ffffff' }}>
-              <span style={{ color: '#c8a24a' }}>✦</span> Luxury &amp; Elegant
-            </div>
-            <div style={{ fontSize: '0.8rem', color: '#a8a29e', marginTop: '0.25rem' }}>
-              &copy; {new Date().getFullYear()} Luxury &amp; Elegant Atelier Ltd.
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem' }}>
-            <Link href="/" style={{ color: '#e7e5e4', textDecoration: 'none' }}>Storefront</Link>
-            <Link href="/track" style={{ color: '#e7e5e4', textDecoration: 'none' }}>Track Order</Link>
-            <Link href="/admin" style={{ color: '#c8a24a', textDecoration: 'none' }}>Admin</Link>
-          </div>
-        </div>
-      </footer>
     </>
   );
 }

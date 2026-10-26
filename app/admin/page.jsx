@@ -4,6 +4,26 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 
+// Authenticated admin API client (sends the stored admin token)
+async function apiAdmin(endpoint, options = {}) {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('luxury_admin_token') : null;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+      ...options.headers,
+    };
+    const res = await fetch(endpoint, { ...options, headers });
+    if (!res.ok) {
+      let msg = 'Admin request failed';
+      try {
+        const d = await res.json();
+        if (d && d.error) msg = d.error;
+      } catch {}
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
 export default function AdminDashboardPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState('admin@shop.com');
@@ -53,23 +73,17 @@ export default function AdminDashboardPage() {
     setLoading(true);
     try {
       if (activeTab === 'stats') {
-        const res = await fetch('/api/admin/stats');
-        if (res.ok) setStats(await res.json());
+        setStats(await apiAdmin('/api/admin/stats'));
       } else if (activeTab === 'orders') {
-        const res = await fetch('/api/orders');
-        if (res.ok) setOrders(await res.json());
+        setOrders(await apiAdmin('/api/orders'));
       } else if (activeTab === 'products') {
-        const res = await fetch('/api/products');
-        if (res.ok) setProducts(await res.json());
+        setProducts(await apiAdmin('/api/products'));
       } else if (activeTab === 'coupons') {
-        const res = await fetch('/api/admin/coupons');
-        if (res.ok) setCoupons(await res.json());
+        setCoupons(await apiAdmin('/api/admin/coupons'));
       } else if (activeTab === 'abandoned') {
-        const res = await fetch('/api/admin/abandoned');
-        if (res.ok) setAbandoned(await res.json());
+        setAbandoned(await apiAdmin('/api/admin/abandoned'));
       } else if (activeTab === 'settings') {
-        const res = await fetch('/api/admin/settings');
-        if (res.ok) setSettings(await res.json());
+        setSettings(await apiAdmin('/api/admin/settings'));
       }
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -77,6 +91,26 @@ export default function AdminDashboardPage() {
       setLoading(false);
     }
   };
+
+    // Authenticated admin API client (sends the stored admin token)
+  async function apiAdmin(endpoint, options = {}) {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('luxury_admin_token') : null;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+      ...options.headers,
+    };
+    const res = await fetch(endpoint, { ...options, headers });
+    if (!res.ok) {
+      let msg = 'Admin request failed';
+      try {
+        const d = await res.json();
+        if (d && d.error) msg = d.error;
+      } catch {}
+      throw new Error(msg);
+    }
+    return res.json();
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -108,15 +142,17 @@ export default function AdminDashboardPage() {
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      const res = await fetch(`/api/orders/${orderId}`, {
+      const data = await apiAdmin(`/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) {
+      if (data?.success) {
         setOrders((prev) =>
           prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
         );
+      } else {
+        alert('Failed to update status');
       }
     } catch (err) {
       alert('Failed to update status');
@@ -126,7 +162,7 @@ export default function AdminDashboardPage() {
   const handleCreateProduct = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/products', {
+      const data = await apiAdmin('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -138,7 +174,7 @@ export default function AdminDashboardPage() {
           image: '/images/default.jpg',
         }),
       });
-      if (res.ok) {
+      if (data?.success) {
         alert('Product created successfully!');
         setNewProdName('');
         setNewProdPrice('');
@@ -154,12 +190,12 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (!newCouponCode.trim()) return;
     try {
-      const res = await fetch('/api/admin/coupons', {
+      const data = await apiAdmin('/api/admin/coupons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: newCouponCode.trim(), percent: +newCouponPercent }),
       });
-      if (res.ok) {
+      if (data?.success) {
         alert('Coupon created!');
         setNewCouponCode('');
         loadDashboardData();
@@ -172,10 +208,10 @@ export default function AdminDashboardPage() {
   const handleDeleteCoupon = async (code) => {
     if (!confirm(`Delete coupon ${code}?`)) return;
     try {
-      const res = await fetch(`/api/admin/coupons?code=${encodeURIComponent(code)}`, {
+      const data = await apiAdmin(`/api/admin/coupons?code=${encodeURIComponent(code)}`, {
         method: 'DELETE',
       });
-      if (res.ok) {
+      if (data?.success) {
         setCoupons((prev) => prev.filter((c) => c.code !== code));
       }
     } catch {
@@ -186,12 +222,12 @@ export default function AdminDashboardPage() {
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/admin/settings', {
+      const data = await apiAdmin('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
       });
-      if (res.ok) {
+      if (data?.success) {
         alert('Settings updated successfully!');
       }
     } catch {
@@ -372,7 +408,7 @@ export default function AdminDashboardPage() {
                               </span>
                             </td>
                             <td style={{ padding: '0.75rem' }}>
-                              <Link href={`/invoice/${ro.id}`} target="_blank" style={{ color: '#c8a24a', textDecoration: 'none', fontWeight: 600 }}>
+                              <Link href={`/invoice/${ro.id}?phone=${ro.phone}`} target="_blank" style={{ color: '#c8a24a', textDecoration: 'none', fontWeight: 600 }}>
                                 📄 View
                               </Link>
                             </td>
@@ -441,7 +477,7 @@ export default function AdminDashboardPage() {
                         </select>
                       </td>
                       <td style={{ padding: '0.75rem' }}>
-                        <Link href={`/invoice/${o.id}`} target="_blank" className="btn btn-gold" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
+                        <Link href={`/invoice/${o.id}?phone=${o.phone}`} target="_blank" className="btn btn-gold" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
                           Invoice
                         </Link>
                       </td>

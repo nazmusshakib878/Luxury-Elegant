@@ -8,6 +8,8 @@ export default function Navbar({ onSearch }) {
   const { cartCount, setIsDrawerOpen, wishlist, addToCart, toggleWishlist } = useCart();
   const [searchTerm, setSearchTerm] = useState('');
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -29,23 +31,24 @@ export default function Navbar({ onSearch }) {
           backgroundColor: '#072118',
           color: '#ffffff',
           textAlign: 'center',
-          fontSize: '0.78rem',
-          padding: '0.55rem 1rem',
+          fontSize: 'clamp(0.68rem, 2vw, 0.78rem)',
+          padding: '0.45rem 0.75rem',
           letterSpacing: '0.04em',
           fontWeight: 500,
           borderBottom: '1px solid rgba(200, 162, 74, 0.25)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '0.75rem',
+          gap: '0.5rem',
           flexWrap: 'wrap',
+          lineHeight: 1.4,
         }}
       >
         <span>✦ Complimentary White-Glove Delivery on orders above ৳3,000</span>
         <span style={{ color: '#c8a24a' }}>·</span>
-        <span>Cash on Delivery across all 64 districts</span>
-        <span style={{ color: '#c8a24a' }}>·</span>
-        <span style={{ color: '#c8a24a', fontWeight: 600 }}>Use code LUXURY10 for 10% privilege</span>
+        <span className="mobile-hide">Cash on Delivery across 64 districts</span>
+        <span style={{ color: '#c8a24a' }} className="mobile-hide">·</span>
+        <span style={{ color: '#c8a24a', fontWeight: 600 }}>Privilege Code: LUXURY10</span>
       </div>
 
       {/* 2. Main Sticky Header */}
@@ -68,68 +71,108 @@ export default function Navbar({ onSearch }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0.85rem 1.5rem',
-            gap: '1.5rem',
+            padding: '0.75rem clamp(0.75rem, 3vw, 1.5rem)',
+            gap: 'clamp(0.5rem, 2vw, 1.5rem)',
           }}
         >
-          {/* Brand Logo */}
-          <Link
-            href="/"
-            style={{
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-              color: '#0f3d2e',
-              flexShrink: 0,
-            }}
-          >
-            <span
+          {/* Left Group: Mobile Menu Button + Brand Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Mobile Hamburger Toggle Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="desktop-hide"
               style={{
-                display: 'inline-flex',
+                width: '2.4rem',
+                height: '2.4rem',
+                borderRadius: '0.65rem',
+                backgroundColor: 'rgba(15, 61, 46, 0.08)',
+                border: '1px solid rgba(15, 61, 46, 0.18)',
+                color: '#0f3d2e',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '2.1rem',
-                height: '2.1rem',
-                borderRadius: '0.5rem',
-                background: 'linear-gradient(135deg, #0f3d2e 0%, #08231a 100%)',
-                color: '#c8a24a',
-                fontSize: '1.2rem',
-                border: '1px solid rgba(200, 162, 74, 0.4)',
-                boxShadow: '0 4px 10px rgba(15, 61, 46, 0.2)',
+              }}
+              title="Open Navigation Menu"
+              aria-label="Navigation Menu"
+            >
+              ☰
+            </button>
+
+            {/* Brand Logo */}
+            <Link
+              href="/"
+              style={{
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.55rem',
+                color: '#0f3d2e',
+                flexShrink: 0,
               }}
             >
-              ✦
-            </span>
-            <div>
-              <span
-                className="font-serif"
-                style={{
-                  fontSize: '1.5rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.02em',
-                  color: '#0f3d2e',
-                  lineHeight: 1,
-                  display: 'block',
-                }}
-              >
-                Luxury &amp; Elegant
-              </span>
               <span
                 style={{
-                  fontSize: '0.62rem',
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '2.1rem',
+                  height: '2.1rem',
+                  borderRadius: '0.5rem',
+                  background: 'linear-gradient(135deg, #0f3d2e 0%, #08231a 100%)',
                   color: '#c8a24a',
-                  fontWeight: 600,
-                  display: 'block',
-                  marginTop: '0.15rem',
+                  fontSize: '1.15rem',
+                  border: '1px solid rgba(200, 162, 74, 0.4)',
+                  boxShadow: '0 4px 10px rgba(15, 61, 46, 0.2)',
+                  flexShrink: 0,
                 }}
               >
-                Atelier Horology &amp; Living
+                ✦
               </span>
-            </div>
-          </Link>
+              <div>
+                <span
+                  className="font-serif desktop-brand-text"
+                  style={{
+                    fontSize: '1.45rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                    color: '#0f3d2e',
+                    lineHeight: 1,
+                    display: 'block',
+                  }}
+                >
+                  Luxury &amp; Elegant
+                </span>
+                <span
+                  className="font-serif mobile-brand-text"
+                  style={{
+                    fontSize: '1.18rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                    color: '#0f3d2e',
+                    lineHeight: 1,
+                    display: 'none',
+                  }}
+                >
+                  Luxury
+                </span>
+                <span
+                  className="mobile-hide"
+                  style={{
+                    fontSize: '0.62rem',
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: '#c8a24a',
+                    fontWeight: 600,
+                    marginTop: '0.15rem',
+                  }}
+                >
+                  Atelier Horology &amp; Living
+                </span>
+              </div>
+            </Link>
+          </div>
 
           {/* Desktop Navigation Links */}
           <nav
@@ -213,12 +256,13 @@ export default function Navbar({ onSearch }) {
             </Link>
           </nav>
 
-          {/* Search Form (Centered) */}
+          {/* Search Form (Desktop Centered) */}
           <form
             onSubmit={handleSearchSubmit}
+            className="mobile-hide"
             style={{
               flex: 1,
-              maxWidth: '26rem',
+              maxWidth: '24rem',
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
@@ -275,8 +319,31 @@ export default function Navbar({ onSearch }) {
             )}
           </form>
 
-          {/* Right Action Icons: Wishlist, Account, Cart */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+          {/* Right Action Icons: Mobile Search, Wishlist, Account, Cart */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(0.4rem, 1.5vw, 0.75rem)', flexShrink: 0 }}>
+            {/* Mobile Search Toggle Button */}
+            <button
+              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+              className="desktop-hide"
+              style={{
+                width: '2.4rem',
+                height: '2.4rem',
+                borderRadius: '9999px',
+                backgroundColor: isMobileSearchOpen ? 'rgba(200, 162, 74, 0.2)' : '#ffffff',
+                border: isMobileSearchOpen ? '1px solid #c8a24a' : '1px solid #e7e5e4',
+                color: '#1c1917',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Search Masterpieces"
+              aria-label="Search"
+            >
+              🔍
+            </button>
+
             {/* Wishlist Button */}
             <button
               onClick={() => setIsWishlistOpen(true)}
@@ -285,8 +352,8 @@ export default function Navbar({ onSearch }) {
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '2.5rem',
-                height: '2.5rem',
+                width: '2.4rem',
+                height: '2.4rem',
                 borderRadius: '9999px',
                 backgroundColor: '#ffffff',
                 border: '1px solid #e7e5e4',
@@ -318,7 +385,7 @@ export default function Navbar({ onSearch }) {
                     fontSize: '0.65rem',
                     fontWeight: 700,
                     borderRadius: '9999px',
-                    padding: '0.1rem 0.4rem',
+                    padding: '0.1rem 0.35rem',
                     boxShadow: '0 2px 6px rgba(225, 29, 72, 0.4)',
                   }}
                 >
@@ -330,17 +397,18 @@ export default function Navbar({ onSearch }) {
             {/* Account Profile / Admin */}
             <Link
               href="/admin"
+              className="mobile-hide"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '2.5rem',
-                height: '2.5rem',
+                width: '2.4rem',
+                height: '2.4rem',
                 borderRadius: '9999px',
                 backgroundColor: 'rgba(15, 61, 46, 0.08)',
                 border: '1px solid rgba(15, 61, 46, 0.18)',
                 color: '#0f3d2e',
-                fontSize: '1.05rem',
+                fontSize: '1rem',
                 textDecoration: 'none',
                 transition: 'all 0.2s ease',
               }}
@@ -368,9 +436,9 @@ export default function Navbar({ onSearch }) {
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.45rem',
-                height: '2.5rem',
-                padding: '0 1rem',
+                gap: '0.4rem',
+                height: '2.4rem',
+                padding: '0 clamp(0.75rem, 2vw, 1rem)',
                 borderRadius: '9999px',
                 background: 'linear-gradient(135deg, #0f3d2e 0%, #09261c 100%)',
                 color: '#ffffff',
@@ -394,7 +462,7 @@ export default function Navbar({ onSearch }) {
                 e.currentTarget.style.borderColor = 'rgba(200, 162, 74, 0.45)';
               }}
             >
-              <span style={{ fontSize: '1rem' }}>🛍️</span>
+              <span style={{ fontSize: '0.95rem' }}>🛍️</span>
               <span style={{ display: 'none' }} className="bag-label">Bag</span>
               {cartCount > 0 && (
                 <span
@@ -404,11 +472,11 @@ export default function Navbar({ onSearch }) {
                     justifyContent: 'center',
                     backgroundColor: '#c8a24a',
                     color: '#0a2318',
-                    fontSize: '0.72rem',
+                    fontSize: '0.7rem',
                     fontWeight: 800,
                     borderRadius: '9999px',
-                    padding: '0.12rem 0.45rem',
-                    marginLeft: '0.15rem',
+                    padding: '0.1rem 0.4rem',
+                    marginLeft: '0.1rem',
                     boxShadow: '0 2px 8px rgba(200, 162, 74, 0.5)',
                   }}
                 >
@@ -418,6 +486,52 @@ export default function Navbar({ onSearch }) {
             </button>
           </div>
         </div>
+
+        {/* Mobile Expandable Search Bar */}
+        {isMobileSearchOpen && (
+          <div
+            className="desktop-hide"
+            style={{
+              padding: '0.65rem clamp(0.75rem, 3vw, 1.5rem)',
+              backgroundColor: '#ffffff',
+              borderTop: '1px solid #e7e5e4',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
+            }}
+          >
+            <form onSubmit={handleSearchSubmit} style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+              <span style={{ position: 'absolute', left: '0.9rem', color: '#78716c', fontSize: '0.85rem', pointerEvents: 'none' }}>🔍</span>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  if (onSearch) onSearch(e.target.value);
+                }}
+                placeholder="Search watches, headphones, luxury..."
+                autoFocus
+                style={{
+                  borderRadius: '9999px',
+                  padding: '0.55rem 2.2rem 0.55rem 2.3rem',
+                  fontSize: '0.85rem',
+                  width: '100%',
+                  backgroundColor: '#f5f5f4',
+                  border: '1px solid #d6d3d1',
+                  color: '#1c1917',
+                  outline: 'none',
+                }}
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  style={{ position: 'absolute', right: '0.8rem', background: 'none', border: 'none', color: '#a8a29e', fontSize: '0.85rem', cursor: 'pointer', padding: '0.2rem' }}
+                >
+                  ✕
+                </button>
+              )}
+            </form>
+          </div>
+        )}
       </header>
 
       {/* 3. Wishlist Quick Slideout Drawer */}
@@ -564,6 +678,281 @@ export default function Navbar({ onSearch }) {
                   ))}
                 </div>
               )}
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* 4. Luxury Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <>
+          <div
+            onClick={() => setIsMobileMenuOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(7, 33, 24, 0.6)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+              zIndex: 70,
+            }}
+          />
+          <aside
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: '85vw',
+              maxWidth: '22rem',
+              backgroundColor: '#faf7f2',
+              boxShadow: '10px 0 40px rgba(0, 0, 0, 0.3)',
+              zIndex: 80,
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'slideInLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Drawer Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1.25rem 1.25rem',
+                backgroundColor: '#0a2318',
+                borderBottom: '1px solid rgba(200, 162, 74, 0.3)',
+                color: '#ffffff',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '1.9rem',
+                    height: '1.9rem',
+                    borderRadius: '0.45rem',
+                    background: 'rgba(200, 162, 74, 0.2)',
+                    color: '#c8a24a',
+                    fontSize: '1rem',
+                    border: '1px solid rgba(200, 162, 74, 0.4)',
+                  }}
+                >
+                  ✦
+                </span>
+                <div>
+                  <div className="font-serif" style={{ fontSize: '1.1rem', fontWeight: 700, color: '#faf7f2' }}>
+                    Luxury &amp; Elegant
+                  </div>
+                  <div style={{ fontSize: '0.62rem', letterSpacing: '0.15em', color: '#c8a24a', textTransform: 'uppercase' }}>
+                    Exclusive Atelier
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  width: '2rem',
+                  height: '2rem',
+                  borderRadius: '9999px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  color: '#faf7f2',
+                  fontSize: '1.1rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                aria-label="Close menu"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Navigation Links */}
+            <nav style={{ padding: '1rem 0', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '0.5rem 1.25rem', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', color: '#78716c', textTransform: 'uppercase' }}>
+                Atelier Experiences
+              </div>
+
+              <a
+                href="/#interactive-atelier-3d"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.85rem 1.25rem',
+                  color: '#1c1917',
+                  textDecoration: 'none',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                }}
+              >
+                <span style={{ color: '#10b981', fontSize: '0.8rem' }}>●</span>
+                <span>3D Interactive Atelier</span>
+                <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#0f3d2e', backgroundColor: 'rgba(16, 185, 129, 0.15)', padding: '0.15rem 0.45rem', borderRadius: '9999px', fontWeight: 700 }}>
+                  Live 3D
+                </span>
+              </a>
+
+              <a
+                href="/#flagship-creation"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.85rem 1.25rem',
+                  color: '#1c1917',
+                  textDecoration: 'none',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ color: '#c8a24a', fontSize: '0.9rem' }}>✦</span>
+                <span>Cinematic Flagship</span>
+                <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#c8a24a', backgroundColor: 'rgba(200, 162, 74, 0.15)', padding: '0.15rem 0.45rem', borderRadius: '9999px', fontWeight: 700 }}>
+                  Craft
+                </span>
+              </a>
+
+              <a
+                href="/#shop"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.85rem 1.25rem',
+                  color: '#1c1917',
+                  textDecoration: 'none',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ color: '#0f3d2e', fontSize: '0.9rem' }}>💎</span>
+                <span>Boutique Catalog</span>
+              </a>
+
+              <Link
+                href="/track"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.85rem 1.25rem',
+                  color: '#1c1917',
+                  textDecoration: 'none',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ color: '#0f3d2e', fontSize: '0.9rem' }}>📦</span>
+                <span>Track VIP Order</span>
+              </Link>
+
+              <Link
+                href="/admin"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.85rem 1.25rem',
+                  color: '#1c1917',
+                  textDecoration: 'none',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ color: '#0f3d2e', fontSize: '0.9rem' }}>🛡️</span>
+                <span>Management Atelier</span>
+              </Link>
+
+              {/* Privilege Code Banner in Drawer */}
+              <div style={{ margin: '1rem 1.25rem', padding: '0.85rem 1rem', borderRadius: '0.85rem', background: 'linear-gradient(135deg, #0f3d2e 0%, #072118 100%)', color: '#ffffff', border: '1px solid rgba(200, 162, 74, 0.35)' }}>
+                <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#c8a24a', fontWeight: 700 }}>
+                  VIP Privilege Voucher
+                </div>
+                <div style={{ fontSize: '1rem', fontWeight: 800, marginTop: '0.2rem', letterSpacing: '0.05em', color: '#ffffff' }}>
+                  LUXURY10
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#d6d3d1', marginTop: '0.2rem' }}>
+                  Enjoy 10% privilege savings at checkout on all haute collections.
+                </div>
+              </div>
+
+              {/* Concierge Support Section */}
+              <div style={{ padding: '0.5rem 1.25rem', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', color: '#78716c', textTransform: 'uppercase' }}>
+                Private Concierge
+              </div>
+
+              <a
+                href="https://wa.me/8801700000000"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.75rem 1.25rem',
+                  color: '#16a34a',
+                  textDecoration: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ fontSize: '1.1rem' }}>💬</span>
+                <span>WhatsApp Private Client</span>
+              </a>
+
+              <a
+                href="tel:+8801800589879"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.75rem 1.25rem',
+                  color: '#44403c',
+                  textDecoration: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ fontSize: '1.1rem' }}>📞</span>
+                <span>+880 1800-LUXURY (Toll-Free)</span>
+              </a>
+            </nav>
+
+            {/* Bottom Actions */}
+            <div style={{ marginTop: 'auto', padding: '1.25rem', borderTop: '1px solid #e7e5e4', backgroundColor: '#f5f5f4', display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsWishlistOpen(true);
+                }}
+                className="btn btn-o"
+                style={{ flex: 1, padding: '0.65rem', fontSize: '0.85rem' }}
+              >
+                ♥ Wishlist ({wishlist.length})
+              </button>
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsDrawerOpen(true);
+                }}
+                className="btn btn-p"
+                style={{ flex: 1, padding: '0.65rem', fontSize: '0.85rem' }}
+              >
+                🛍️ Bag ({cartCount})
+              </button>
             </div>
           </aside>
         </>

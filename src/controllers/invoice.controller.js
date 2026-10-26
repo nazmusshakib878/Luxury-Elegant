@@ -17,17 +17,26 @@ exports.renderInvoice = async (req, res) => {
   }
 
   const settings = await getStoreSettings();
-  let items = [];
+  const items = [];
   try {
     items = JSON.parse(order.items || '[]');
   } catch {}
+
+  // Escape HTML to prevent stored XSS from order/customer-entered data
+  const esc = (str) =>
+    String(str ?? '').replace(/[&<>"]/g, (c) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+    }[c]));
 
   const html = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Invoice #${order.id} — ${settings.shop_name}</title>
+  <title>Invoice #${esc(order.id)} — ${esc(settings.shop_name)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
   <style>
@@ -151,15 +160,15 @@ exports.renderInvoice = async (req, res) => {
     <div class="header">
       <div>
         <h1 class="brand-title">${settings.shop_name}</h1>
-        <div class="meta-text">Invoice #<b>${order.id}</b> · ${order.created}</div>
+        <div class="meta-text">Invoice #<b>${esc(order.id)}</b> · ${esc(order.created)}</div>
       </div>
       <button class="btn-print" onclick="window.print()">🖨 Print / Save PDF</button>
     </div>
 
     <div class="customer-info">
-      <div class="customer-name">${order.name}</div>
-      <p>📞 ${order.phone}</p>
-      <p>📍 ${order.address} (${order.area === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</p>
+      <div class="customer-name">${esc(order.name)}</div>
+      <p>📞 ${esc(order.phone)}</p>
+      <p>📍 ${esc(order.address)} (${esc(order.area) === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</p>
     </div>
 
     <table>
@@ -175,8 +184,8 @@ exports.renderInvoice = async (req, res) => {
         ${items.map((i) => `
           <tr>
             <td>
-              <b>${i.name}</b>
-              ${i.variant ? `<br><small style="color:#78716c">${i.variant}</small>` : ''}
+              <b>${esc(i.name)}</b>
+              ${i.variant ? `<br><small style="color:#78716c">${esc(i.variant)}</small>` : ''}
             </td>
             <td class="r">৳${Math.round(i.price).toLocaleString('en-IN')}</td>
             <td class="r">${i.qty}</td>
@@ -192,7 +201,7 @@ exports.renderInvoice = async (req, res) => {
       <div>Shipping: ${order.shipping ? `৳${order.shipping}` : 'Free'}</div>
       <div class="total-row">Total: ৳${Math.round(order.total).toLocaleString('en-IN')}</div>
       <div style="margin-top: 10px;">
-        Payment: <b>${order.method.toUpperCase()}</b> · Status: <span class="badge">${order.payment_status}</span>
+        Payment: <b>${esc(order.method).toUpperCase()}</b> · Status: <span class="badge">${esc(order.payment_status)}</span>
       </div>
     </div>
   </div>

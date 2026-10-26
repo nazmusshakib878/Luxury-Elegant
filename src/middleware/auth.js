@@ -6,8 +6,8 @@ const { verifyToken } = require('../utils/security');
 function authenticateUser(req, res, next) {
   try {
     const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (req.query.t || '');
-
+    // Token must be in the Authorization header only (never a query string, which is logged).
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
     req.user = verifyToken(token);
   } catch {
     req.user = null;

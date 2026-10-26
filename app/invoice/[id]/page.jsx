@@ -12,7 +12,10 @@ export default function InvoicePage() {
   useEffect(() => {
     async function loadInvoice() {
       try {
-        const res = await fetch(`/api/orders/${id}`);
+        const params = new URLSearchParams(window.location.search);
+        const phone = params.get('phone');
+        const url = `/api/orders/${id}` + (phone ? '?phone=' + encodeURIComponent(phone) : '');
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           setOrder(data);
