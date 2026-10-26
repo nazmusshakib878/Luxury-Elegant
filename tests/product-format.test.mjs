@@ -44,6 +44,12 @@ test('showcase fallback serves catalog data and refuses customer records and wri
   assert.equal(products.length, 16);
   const categories = await db.all('SELECT * FROM categories ORDER BY id ASC');
   assert.equal(categories.length, 4);
+  const beautyById = await db.all(
+    'SELECT p.*, c.name AS cat FROM products p LEFT JOIN categories c ON c.id = p.cat_id WHERE p.active = 1 AND p.cat_id = ? ORDER BY p.id DESC',
+    [4]
+  );
+  assert.equal(beautyById.length, 3);
+  assert.equal(beautyById.every((product) => Number(product.cat_id) === 4), true);
   const storefrontQuery = await db.all(`
     SELECT p.*, c.name AS cat,
       (SELECT ROUND(AVG(rating), 1) FROM reviews WHERE product_id = p.id) AS rating,

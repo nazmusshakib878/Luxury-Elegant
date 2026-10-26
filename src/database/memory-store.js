@@ -49,7 +49,7 @@ class MemoryStore {
     }
 
     // Specific product ID
-    const idMatch = sql.match(/(?:p\.)?id\s*=\s*\?/i);
+    const idMatch = sql.match(/(?:\bp\.)?\bid\s*=\s*\?/i);
     if (idMatch && params.length > 0) {
       const idVal = Number(params[params.length - 1]);
       list = list.filter((p) => p.id === idVal);
@@ -79,7 +79,7 @@ class MemoryStore {
     if (sql.includes('cat_id = ?')) {
       const catParam = params.find((p) => typeof p === 'number' || /^\d+$/.test(p));
       if (catParam !== undefined) {
-        list = list.filter((p) => p.cat_id === Number(catParam));
+        list = list.filter((p) => Number(p.cat_id) === Number(catParam));
       }
     } else if (sql.includes('LOWER(c.name) = LOWER(?)')) {
       const catParam = params.find((p) => typeof p === 'string' && !p.startsWith('%'));
