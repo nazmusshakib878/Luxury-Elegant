@@ -78,6 +78,14 @@ function switchToReadOnlyCatalog(err) {
   console.error('Persistent PostgreSQL is unavailable; serving the read-only catalog preview.', err?.message || 'connection failed');
 }
 
+function isConnectionFailure(err) {
+  return Boolean(err && (
+    ['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'ECONNRESET', 'EHOSTUNREACH', 'EPIPE', '57P01', '57P02', '57P03'].includes(err.code) ||
+    err.code?.startsWith('08') ||
+    err.name === 'AggregateError'
+  ));
+}
+
 function serializeSqlite(operation) {
   const result = sqliteQueue.then(operation);
   sqliteQueue = result.catch(() => {});
@@ -122,7 +130,8 @@ const db = {
         }
         return res.rows;
       } catch (err) {
-        switchToReadOnlyCatalog(err);
+        if (isConnectionFailure(err)) switchToReadOnlyCatalog(err);
+        else throw err;
         if (isCatalogRead(sql)) return getMemoryStore().all(sql, params);
         throw new Error('Persistent database unavailable; customer and order records cannot be read from preview mode.');
       }
@@ -150,7 +159,8 @@ const db = {
         }
         return res.rows[0];
       } catch (err) {
-        switchToReadOnlyCatalog(err);
+        if (isConnectionFailure(err)) switchToReadOnlyCatalog(err);
+        else throw err;
         if (isCatalogRead(sql)) return getMemoryStore().get(sql, params);
         throw new Error('Persistent database unavailable; customer and order records cannot be read from preview mode.');
       }
@@ -169,7 +179,10 @@ const db = {
       if (pgUnavailable) throw new Error('Persistent database unavailable; all writes are disabled in read-only catalog preview mode.');
       let res;
       try { res = await pgPool.query(toPgSql(sql), params); }
-      catch (err) { switchToReadOnlyCatalog(err); throw new Error('Persistent database unavailable; all writes are disabled in read-only catalog preview mode.'); }
+      catch (err) {
+        if (isConnectionFailure(err)) switchToReadOnlyCatalog(err);
+        throw new Error('Persistent database unavailable; all writes are disabled in read-only catalog preview mode.');
+      }
       return {
         changes: res.rowCount,
         lastInsertRowid: res.rows[0]?.id || null,
@@ -187,7 +200,10 @@ const db = {
     if (usePostgres) {
       if (pgUnavailable) throw new Error('Persistent database unavailable; schema changes are disabled in read-only catalog preview mode.');
       try { return await pgPool.query(sql); }
-      catch (err) { switchToReadOnlyCatalog(err); throw err; }
+      catch (err) {
+        if (isConnectionFailure(err)) switchToReadOnlyCatalog(err);
+        throw err;
+      }
     }
     if (sqliteDb) {
       return serializeSqlite(() => sqliteDb.exec(sql));
@@ -206,6 +222,7 @@ const db = {
   async transaction(callback) {
     if (typeof callback !== 'function') throw new TypeError('Transaction callback is required.');
     if (pgUnavailable || this.isFallback) throw new Error('Persistent database is unavailable; transactions are disabled in read-only catalog preview mode.');
+    if (usePostgres && !this.isPostgres) throw new Error('Persistent database is unavailable; transactions are disabled in read-only catalog preview mode.');
 
     if (usePostgres) {
       let client;
@@ -225,9 +242,7 @@ const db = {
         if (client) {
           try { await client.query('ROLLBACK'); } catch {}
         }
-        if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT' || err.code === 'ENOTFOUND' || err.code === 'ECONNRESET') {
-          switchToReadOnlyCatalog(err);
-        }
+        if (isConnectionFailure(err)) switchToReadOnlyCatalog(err);
         throw err;
       } finally {
         client?.release();

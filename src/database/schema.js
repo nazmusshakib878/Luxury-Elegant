@@ -296,7 +296,9 @@ async function initSchema() {
         console.log('🌿 [CATALOG READY] Running in resilient in-memory fallback mode with full catalog.');
       }
     } catch (err) {
+      schemaInitPromise = null;
       console.error('Database schema initialization error:', err.message);
+      throw err;
     }
   })();
 
