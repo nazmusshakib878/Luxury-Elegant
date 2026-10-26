@@ -565,5 +565,101 @@ body {
   }
 }
 
+/* ==========================================================================
+   ULTRA-LUXURY DESIGN TOKENS & UTILITY CLASSES
+   ========================================================================== */
 
+/* Gold Foil Gradient Text */
+.gold-foil-text {
+  background: linear-gradient(135deg, #f3df9f 0%, #d4af37 35%, #aa771c 70%, #dfbd6c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
 
+/* Animated Shimmer Text */
+.shimmer-text {
+  background: linear-gradient(90deg, #c8a24a 0%, #fff2b8 50%, #c8a24a 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmerAnim 4s linear infinite;
+}
+
+@keyframes shimmerAnim {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* Luxury Badge */
+.luxury-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(15, 61, 46, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(200, 162, 74, 0.4);
+  color: #c8a24a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Gold Glow */
+.gold-glow {
+  box-shadow: 0 0 25px -4px rgba(200, 162, 74, 0.45);
+}
+
+.emerald-glow {
+  box-shadow: 0 0 30px -5px rgba(15, 61, 46, 0.4);
+}
+
+/* Ultra-Premium Card Lift on Hover */
+.product-card {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease !important;
+}
+
+.product-card:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 22px 45px -12px rgba(15, 61, 46, 0.18), 0 0 0 1px rgba(200, 162, 74, 0.35) !important;
+  border-color: rgba(200, 162, 74, 0.5) !important;
+}
+
+/* Luxury Provenance Box */
+.provenance-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background: linear-gradient(145deg, #ffffff 0%, #faf8f5 100%);
+  border: 1px solid rgba(200, 162, 74, 0.25);
+  padding: 1.75rem;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.provenance-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(200, 162, 74, 0.6);
+  box-shadow: 0 20px 40px -10px rgba(15, 61, 46, 0.12);
+}
+
+/* Gold Diamond Hairline Divider */
+.gold-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 3rem auto;
+  max-width: 24rem;
+}
+
+.gold-divider::before,
+.gold-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200, 162, 74, 0.5), transparent);
+}

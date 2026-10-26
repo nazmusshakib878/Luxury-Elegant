@@ -24,7 +24,7 @@
       "cat_id": 1,
       "price": 2490,
       "sale_price": 1790,
-      "stock": 31,
+      "stock": 30,
       "image": "/images/prod-1.jpg",
       "description": "Meticulously crafted from 100% European flax linen. Breathable, relaxed tailoring with mother-of-pearl buttons, ideal for refined tropical elegance.",
       "variants": "{\"sizes\":[\"S\",\"M\",\"L\",\"XL\"],\"colors\":[\"White\",\"Navy\",\"Olive\"]}",
@@ -172,6 +172,58 @@
       "description": "An intoxicating blend of wild Cambodian agarwood oud, Taif damascene rose, amber resin, and Madagascar vanilla. Encased in a heavy cut-crystal flacon with 24k gold leaf atomizer.",
       "variants": "{\"sizes\":[\"50ml\",\"100ml\"]}",
       "flash_end": "2026-10-30T18:00:00.000Z",
+      "active": 1
+    },
+    {
+      "id": 13,
+      "name": "Monaco Hand-Welted Goodyear Leather Oxford Shoes",
+      "cat_id": 1,
+      "price": 8900,
+      "sale_price": 7500,
+      "stock": 18,
+      "image": "/images/prod-13.jpg",
+      "description": "Masterfully hand-welted from full-grain French calfskin with Goodyear-welted oak bark leather soles. Features hand-burnished espresso patina, closed-channel stitching, and brass eyelets for timeless sartorial distinction.",
+      "variants": "{\"sizes\":[\"40\",\"41\",\"42\",\"43\",\"44\"],\"colors\":[\"Espresso Brown\",\"Classic Black\"]}",
+      "flash_end": "2026-10-31T18:00:00.000Z",
+      "active": 1
+    },
+    {
+      "id": 14,
+      "name": "Obsidian Chrono Smart Ring (Titanium Edition)",
+      "cat_id": 2,
+      "price": 14500,
+      "sale_price": 11900,
+      "stock": 22,
+      "image": "/images/prod-14.jpg",
+      "description": "Forged from grade 5 aerospace titanium with an inner inlay of 24k gold leaf. Delivers medical-grade heart rate, sleep phase tracking, skin temperature, and 7-day battery life in a featherlight waterproof design.",
+      "variants": "{\"sizes\":[\"US 8\",\"US 9\",\"US 10\",\"US 11\"],\"finishes\":[\"Matte Obsidian\",\"Brushed Titanium\"]}",
+      "flash_end": null,
+      "active": 1
+    },
+    {
+      "id": 15,
+      "name": "Kyoto Fluted Crystal Decanter & Whiskey Glass Set",
+      "cat_id": 3,
+      "price": 6800,
+      "sale_price": 5400,
+      "stock": 14,
+      "image": "/images/prod-15.jpg",
+      "description": "Hand-blown from 24% lead-free sparkling crystal with heavy geometric fluted bases and a precision-ground geometric crystal stopper with 24k gold trimmed neck. Includes two matching weighted tumblers.",
+      "variants": "{\"sets\":[\"Decanter + 2 Tumblers\",\"Complete 6-Piece Set\"]}",
+      "flash_end": "2026-10-30T18:00:00.000Z",
+      "active": 1
+    },
+    {
+      "id": 16,
+      "name": "Aurelian Gold 24K Cellular Face Nectar (50ml)",
+      "cat_id": 4,
+      "price": 5200,
+      "sale_price": 4200,
+      "stock": 25,
+      "image": "/images/prod-16.jpg",
+      "description": "An opulent nocturnal youth concentrate combining cold-pressed Moroccan prickly pear seed oil, organic rosehip, genuine suspended 24-karat gold leaf flakes, and Bulgarian damask rose otto. Restores cellular luminosity overnight.",
+      "variants": "{\"sizes\":[\"30ml Travel Flacon\",\"50ml Grand Flacon\"]}",
+      "flash_end": "2026-10-31T18:00:00.000Z",
       "active": 1
     }
   ],
@@ -355,6 +407,82 @@
       "rating": 5,
       "comment": "The flacon alone is worth displaying. Deep, opulent and truly imperial.",
       "created": "2026-10-26 08:47:15"
+    },
+    {
+      "id": 14,
+      "product_id": 1,
+      "user_name": "Sadia Khan",
+      "rating": 5,
+      "comment": "Bespoke perfection! The unboxing and finishing are truly world-class.",
+      "created": "2026-10-26 09:05:04"
+    },
+    {
+      "id": 15,
+      "product_id": 13,
+      "user_name": "Mahmudul Hasan (Gulshan)",
+      "rating": 5,
+      "comment": "The hand-burnished espresso leather is pure artistry. Break-in was comfortable from day one.",
+      "created": "2026-10-26 12:15:00"
+    },
+    {
+      "id": 16,
+      "product_id": 13,
+      "user_name": "Shafqat Chowdhury",
+      "rating": 5,
+      "comment": "Exceptional Goodyear construction. Looks like bespoke Savile Row shoemaking.",
+      "created": "2026-10-26 13:00:00"
+    },
+    {
+      "id": 17,
+      "product_id": 14,
+      "user_name": "Nabil Tahmid",
+      "rating": 5,
+      "comment": "The gold interior against the titanium feels luxurious. Sleep tracking is uncannily accurate.",
+      "created": "2026-10-26 13:30:00"
+    },
+    {
+      "id": 18,
+      "product_id": 14,
+      "user_name": "Dr. Zeeshan",
+      "rating": 5,
+      "comment": "Featherlight and discrete under a cuff. Battery lasts a full week easily.",
+      "created": "2026-10-26 14:10:00"
+    },
+    {
+      "id": 19,
+      "product_id": 15,
+      "user_name": "Syed Arman",
+      "rating": 5,
+      "comment": "Heavy, brilliant lead-free crystal with breathtaking light refraction on my bar cart.",
+      "created": "2026-10-26 14:40:00"
+    },
+    {
+      "id": 20,
+      "product_id": 16,
+      "user_name": "Nusrat Jahan",
+      "rating": 5,
+      "comment": "The suspended 24k gold flakes absorb effortlessly into the skin. Woke up with a radiant dewy glow.",
+      "created": "2026-10-26 15:00:00"
+    },
+    {
+      "id": 21,
+      "product_id": 16,
+      "user_name": "Faiza Karim",
+      "rating": 5,
+      "comment": "Smells of divine fresh damask rose and amber. Truly an imperial beauty ritual.",
+      "created": "2026-10-26 15:05:00"
     }
+  ],
+  "coupons": [
+    { "code": "LUXURY10", "percent": 10, "active": 1 },
+    { "code": "VIP20", "percent": 20, "active": 1 },
+    { "code": "WELCOME10", "percent": 10, "active": 1 },
+    { "code": "ELEGANT15", "percent": 15, "active": 1 }
+  ],
+  "settings": [
+    { "k": "site_name", "v": "Luxury & Elegant" },
+    { "k": "shipping_inside", "v": "60" },
+    { "k": "shipping_outside", "v": "120" },
+    { "k": "free_shipping_min", "v": "3000" }
   ]
 }

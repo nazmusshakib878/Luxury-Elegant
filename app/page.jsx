@@ -9,7 +9,7 @@ import FlagshipCinematicShowcase from './components/FlagshipCinematicShowcase';
 import { useCart } from './context/CartContext';
 
 export default function HomePage() {
-  const { addToCart, wishlist, toggleWishlist, setIsDrawerOpen } = useCart();
+  const { addToCart, wishlist, toggleWishlist, setIsDrawerOpen, showToast } = useCart();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +25,16 @@ export default function HomePage() {
   const [openFaq, setOpenFaq] = useState(0);
   const [vipEmail, setVipEmail] = useState('');
   const [vipJoined, setVipJoined] = useState(false);
+  const [copiedCoupon, setCopiedCoupon] = useState(false);
+
+  const handleCopyCoupon = (code) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(code);
+      setCopiedCoupon(true);
+      if (showToast) showToast(`Privilege Code "${code}" copied to clipboard!`);
+      setTimeout(() => setCopiedCoupon(false), 2500);
+    }
+  };
 
   // Fetch products and categories on mount or when filter changes
   useEffect(() => {
@@ -777,107 +787,349 @@ export default function HomePage() {
                     </div>
 
                     {/* Product Details */}
-                    <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: '0.35rem',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: '0.75rem',
-                            color: '#c8a24a',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                          }}
-                        >
-                          {p.cat || 'Artisanal'}
-                        </span>
-                        <span style={{ fontSize: '0.7rem', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '9999px', backgroundColor: '#16a34a' }}></span>
-                          In Stock
-                        </span>
-                      </div>
+                    {(() => {
+                      const savings = p.on_sale && p.price_now ? p.price - p.price_now : 0;
+                      const catTag = (() => {
+                        const c = String(p.cat || '').toLowerCase();
+                        if (c.includes('fashion')) return '✦ BESPOKE COUTURE';
+                        if (c.includes('electronic')) return '✦ TITANIUM ACOUSTICS';
+                        if (c.includes('home')) return '✦ ARTISANAL LIVING';
+                        if (c.includes('beauty')) return '✦ CELLULAR ELIXIR';
+                        return '✦ ATELIER MASTERPIECE';
+                      })();
 
-                      <Link
-                        href={`/products/${p.id}`}
-                        style={{
-                          fontWeight: 700,
-                          fontSize: '1.05rem',
-                          color: '#1c1917',
-                          textDecoration: 'none',
-                          marginBottom: '0.4rem',
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {p.name}
-                      </Link>
-
-                      {/* Rating */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          marginBottom: '0.75rem',
-                          fontSize: '0.82rem',
-                        }}
-                      >
-                        <span style={{ color: '#c8a24a' }}>★</span>
-                        <span style={{ fontWeight: 600, color: '#1c1917' }}>{p.rating || '4.9'}</span>
-                        <span style={{ color: '#a8a29e' }}>({p.reviews || 12} reviews)</span>
-                      </div>
-
-                      {/* Price & Action */}
-                      <div
-                        style={{
-                          marginTop: 'auto',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          paddingTop: '0.75rem',
-                          borderTop: '1px solid #f5f5f4',
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f3d2e' }}>
-                            ৳{(p.price_now || p.price).toLocaleString()}
+                      return (
+                        <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: '0.35rem',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                color: '#c8a24a',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.06em',
+                              }}
+                            >
+                              {catTag}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              <span style={{ width: '0.4rem', height: '0.4rem', borderRadius: '9999px', backgroundColor: '#16a34a' }}></span>
+                              In Stock
+                            </span>
                           </div>
-                          {p.on_sale && (
-                            <div style={{ fontSize: '0.8rem', color: '#a8a29e', textDecoration: 'line-through' }}>
-                              ৳{p.price.toLocaleString()}
-                            </div>
-                          )}
-                        </div>
 
-                        <button
-                          onClick={() => {
-                            addToCart(p);
-                            setAddedId(p.id);
-                            setTimeout(() => setAddedId(null), 1200);
-                          }}
-                          className="btn btn-p"
-                          style={{
-                            padding: '0.55rem 1.1rem',
-                            fontSize: '0.85rem',
-                            backgroundColor: isRecentlyAdded ? '#15803d' : '#0f3d2e',
-                            borderColor: isRecentlyAdded ? '#22c55e' : 'transparent',
-                            transition: 'all 0.25s ease',
-                          }}
-                        >
-                          {isRecentlyAdded ? '✓ Added' : '+ Add'}
-                        </button>
-                      </div>
-                    </div>
+                          <Link
+                            href={`/products/${p.id}`}
+                            style={{
+                              fontWeight: 700,
+                              fontSize: '1.05rem',
+                              color: '#1c1917',
+                              textDecoration: 'none',
+                              marginBottom: '0.4rem',
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            {p.name}
+                          </Link>
+
+                          {/* Rating */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              marginBottom: '0.75rem',
+                              fontSize: '0.82rem',
+                            }}
+                          >
+                            <span style={{ color: '#c8a24a' }}>★</span>
+                            <span style={{ fontWeight: 600, color: '#1c1917' }}>{p.rating || '4.9'}</span>
+                            <span style={{ color: '#a8a29e' }}>({p.reviews || 12} reviews)</span>
+                          </div>
+
+                          {/* Price & Action */}
+                          <div
+                            style={{
+                              marginTop: 'auto',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              paddingTop: '0.75rem',
+                              borderTop: '1px solid #f5f5f4',
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f3d2e', display: 'flex', alignItems: 'baseline' }}>
+                                  <span style={{ color: '#c8a24a', fontSize: '0.95rem', marginRight: '0.15rem' }}>৳</span>
+                                  {(p.price_now || p.price).toLocaleString()}
+                                </div>
+                                {p.on_sale && (
+                                  <div style={{ fontSize: '0.8rem', color: '#a8a29e', textDecoration: 'line-through' }}>
+                                    ৳{p.price.toLocaleString()}
+                                  </div>
+                                )}
+                              </div>
+                              {savings > 0 && (
+                                <div style={{ fontSize: '0.68rem', color: '#16a34a', fontWeight: 600, marginTop: '0.15rem' }}>
+                                  Privilege Save ৳{savings.toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                addToCart(p);
+                                setAddedId(p.id);
+                                setTimeout(() => setAddedId(null), 1200);
+                              }}
+                              className="btn btn-p"
+                              style={{
+                                padding: '0.55rem 1.1rem',
+                                fontSize: '0.85rem',
+                                backgroundColor: isRecentlyAdded ? '#15803d' : '#0f3d2e',
+                                borderColor: isRecentlyAdded ? '#22c55e' : 'transparent',
+                                transition: 'all 0.25s ease',
+                              }}
+                            >
+                              {isRecentlyAdded ? '✓ Added' : '+ Add'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}
             </div>
           )}
+        </section>
+
+        {/* 5. Artisanal Provenance & Heritage Pillars */}
+        <section
+          style={{
+            marginTop: '5rem',
+            position: 'relative',
+            borderRadius: '2.5rem',
+            background: 'linear-gradient(135deg, #09261d 0%, #0c3327 50%, #061c15 100%)',
+            padding: 'clamp(2rem, 5vw, 4rem) clamp(1.25rem, 4vw, 3rem)',
+            color: '#ffffff',
+            border: '1px solid rgba(200, 162, 74, 0.3)',
+            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.4)',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Subtle Ambient Background Light */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '-8rem',
+              right: '-8rem',
+              width: '28rem',
+              height: '28rem',
+              borderRadius: '9999px',
+              backgroundColor: 'rgba(200, 162, 74, 0.12)',
+              filter: 'blur(100px)',
+              pointerEvents: 'none',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '-8rem',
+              left: '-8rem',
+              width: '28rem',
+              height: '28rem',
+              borderRadius: '9999px',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              filter: 'blur(100px)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          <div style={{ position: 'relative', zIndex: 10 }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', maxWidth: '42rem', margin: '0 auto 3.5rem' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  borderRadius: '9999px',
+                  border: '1px solid rgba(200, 162, 74, 0.4)',
+                  backgroundColor: 'rgba(200, 162, 74, 0.1)',
+                  padding: '0.35rem 1rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#c8a24a',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  marginBottom: '1rem',
+                }}
+              >
+                <span>✦ THE FOUR ATELIER CORNERSTONES</span>
+              </div>
+              <h2
+                className="font-serif"
+                style={{
+                  fontSize: 'clamp(2rem, 4vw, 2.85rem)',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  margin: '0 0 1rem',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Artisanal Provenance &amp; Heritage
+              </h2>
+              <p style={{ color: '#d6d3d1', fontSize: '1rem', lineHeight: 1.7, margin: 0, fontWeight: 300 }}>
+                Every creation in our collection originates from celebrated master craft houses across the world, directly curated and guaranteed genuine for Bangladesh.
+              </p>
+            </div>
+
+            {/* 4 Pillars Grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))',
+                gap: '1.5rem',
+              }}
+            >
+              {/* Pillar 1: Geneva Horology */}
+              <div
+                className="provenance-card"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: '1.75rem',
+                  padding: '2rem 1.5rem',
+                  border: '1px solid rgba(200, 162, 74, 0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                  <span style={{ fontSize: '2.2rem' }}>⏱️</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: '#c8a24a', textTransform: 'uppercase', border: '1px solid rgba(200, 162, 74, 0.35)', padding: '0.2rem 0.6rem', borderRadius: '9999px', backgroundColor: 'rgba(200, 162, 74, 0.08)' }}>
+                    SWITZERLAND
+                  </span>
+                </div>
+                <h3 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', margin: '0 0 0.5rem' }}>
+                  Geneva Horology
+                </h3>
+                <p style={{ color: '#a8a29e', fontSize: '0.88rem', lineHeight: 1.6, margin: '0 0 1.25rem', flex: 1 }}>
+                  Hand-finished tourbillon escapements, 316L surgical steel cases, sapphire crystal with dual anti-reflective coating, and 2-Year Atelier seals.
+                </p>
+                <div style={{ paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '0.78rem', color: '#c8a24a', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <div>✓ 28,800 vph High-Beat Escapement</div>
+                  <div>✓ Master Chronometer Tested</div>
+                </div>
+              </div>
+
+              {/* Pillar 2: Florence Leather */}
+              <div
+                className="provenance-card"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: '1.75rem',
+                  padding: '2rem 1.5rem',
+                  border: '1px solid rgba(200, 162, 74, 0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                  <span style={{ fontSize: '2.2rem' }}>👞</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: '#c8a24a', textTransform: 'uppercase', border: '1px solid rgba(200, 162, 74, 0.35)', padding: '0.2rem 0.6rem', borderRadius: '9999px', backgroundColor: 'rgba(200, 162, 74, 0.08)' }}>
+                    TUSCANY, ITALY
+                  </span>
+                </div>
+                <h3 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', margin: '0 0 0.5rem' }}>
+                  Florence Master Leather
+                </h3>
+                <p style={{ color: '#a8a29e', fontSize: '0.88rem', lineHeight: 1.6, margin: '0 0 1.25rem', flex: 1 }}>
+                  Full-grain Tuscan calfskin, hand-burnished espresso patinas, and channelled Goodyear welted soles crafted for a lifetime of distinction.
+                </p>
+                <div style={{ paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '0.78rem', color: '#c8a24a', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <div>✓ Hand-Welted Goodyear Soles</div>
+                  <div>✓ Vegetable-Tanned Full Grain</div>
+                </div>
+              </div>
+
+              {/* Pillar 3: Kyoto Fluted Crystal */}
+              <div
+                className="provenance-card"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: '1.75rem',
+                  padding: '2rem 1.5rem',
+                  border: '1px solid rgba(200, 162, 74, 0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                  <span style={{ fontSize: '2.2rem' }}>🥃</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: '#c8a24a', textTransform: 'uppercase', border: '1px solid rgba(200, 162, 74, 0.35)', padding: '0.2rem 0.6rem', borderRadius: '9999px', backgroundColor: 'rgba(200, 162, 74, 0.08)' }}>
+                    KYOTO, JAPAN
+                  </span>
+                </div>
+                <h3 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', margin: '0 0 0.5rem' }}>
+                  Kyoto Fluted Crystal &amp; Marble
+                </h3>
+                <p style={{ color: '#a8a29e', fontSize: '0.88rem', lineHeight: 1.6, margin: '0 0 1.25rem', flex: 1 }}>
+                  Mouth-blown 24% fluted crystal decanters and hand-carved Carrara marble trays with brass spherical feet, designed for exquisite entertaining.
+                </p>
+                <div style={{ paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '0.78rem', color: '#c8a24a', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <div>✓ Diamond-Cut Refractive Facets</div>
+                  <div>✓ Solid Carrara Veined Marble</div>
+                </div>
+              </div>
+
+              {/* Pillar 4: Grasse Parfumerie */}
+              <div
+                className="provenance-card"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: '1.75rem',
+                  padding: '2rem 1.5rem',
+                  border: '1px solid rgba(200, 162, 74, 0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                  <span style={{ fontSize: '2.2rem' }}>✨</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', color: '#c8a24a', textTransform: 'uppercase', border: '1px solid rgba(200, 162, 74, 0.35)', padding: '0.2rem 0.6rem', borderRadius: '9999px', backgroundColor: 'rgba(200, 162, 74, 0.08)' }}>
+                    GRASSE, FRANCE
+                  </span>
+                </div>
+                <h3 className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ffffff', margin: '0 0 0.5rem' }}>
+                  Grasse Parfumerie &amp; 24K Radiance
+                </h3>
+                <p style={{ color: '#a8a29e', fontSize: '0.88rem', lineHeight: 1.6, margin: '0 0 1.25rem', flex: 1 }}>
+                  Suspended 24K colloidal gold face nectars, cold-pressed Damask rose, and aged wild Cambodian agarwood oud formulations with 16-hour longevity.
+                </p>
+                <div style={{ paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '0.78rem', color: '#c8a24a', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <div>✓ 24-Karat Colloidal Bio-Gold</div>
+                  <div>✓ Extrait de Parfum Concentration</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* 5. Patron Testimonials & Press Accolades */}
@@ -1067,13 +1319,84 @@ export default function HomePage() {
             <h2 className="font-serif" style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)', fontWeight: 700, margin: '0 0 1rem', color: '#ffffff' }}>
               Join the Atelier Circle
             </h2>
-            <p style={{ color: '#e7e5e4', fontSize: '1rem', lineHeight: 1.6, marginBottom: '2rem' }}>
-              Receive an exclusive <strong style={{ color: '#c8a24a' }}>10% Welcome Privilege</strong> with code <code style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.5rem', borderRadius: '0.4rem', border: '1px solid #c8a24a' }}>LUXURY10</code>, early previews of limited-run timepieces, and bespoke private events.
+            <p style={{ color: '#e7e5e4', fontSize: '1rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+              Receive an exclusive <strong style={{ color: '#c8a24a' }}>20% Welcome Privilege</strong> with code <code style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.5rem', borderRadius: '0.4rem', border: '1px solid #c8a24a', color: '#c8a24a' }}>VIP20</code>, early previews of limited-run horology, and private trunk show access.
             </p>
 
+            {/* Interactive Quick Copy Coupon Pill */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                  border: '1px solid rgba(200, 162, 74, 0.45)',
+                  borderRadius: '9999px',
+                  padding: '0.35rem 0.85rem',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                <span style={{ fontSize: '0.85rem', color: '#e7e5e4' }}>
+                  Privilege Code: <strong style={{ color: '#c8a24a', letterSpacing: '0.05em' }}>VIP20</strong> (-20%)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyCoupon('VIP20')}
+                  style={{
+                    backgroundColor: copiedCoupon ? '#16a34a' : '#c8a24a',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '9999px',
+                    padding: '0.25rem 0.75rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {copiedCoupon ? '✓ Copied' : 'Copy'}
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                  border: '1px solid rgba(200, 162, 74, 0.45)',
+                  borderRadius: '9999px',
+                  padding: '0.35rem 0.85rem',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                <span style={{ fontSize: '0.85rem', color: '#e7e5e4' }}>
+                  Welcome: <strong style={{ color: '#c8a24a', letterSpacing: '0.05em' }}>LUXURY10</strong> (-10%)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyCoupon('LUXURY10')}
+                  style={{
+                    backgroundColor: '#0f3d2e',
+                    border: '1px solid #c8a24a',
+                    color: '#c8a24a',
+                    borderRadius: '9999px',
+                    padding: '0.25rem 0.75rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
             {vipJoined ? (
-              <div style={{ backgroundColor: 'rgba(200, 162, 74, 0.15)', border: '1px solid #c8a24a', padding: '1rem 1.5rem', borderRadius: '1rem', color: '#ffffff', fontSize: '0.95rem' }}>
-                🎉 <strong>Welcome to the Atelier Circle!</strong> Your exclusive 10% privilege code is active: <strong style={{ color: '#c8a24a' }}>LUXURY10</strong>.
+              <div style={{ backgroundColor: 'rgba(200, 162, 74, 0.15)', border: '1px solid #c8a24a', padding: '1.25rem 1.5rem', borderRadius: '1.25rem', color: '#ffffff', fontSize: '0.95rem' }}>
+                🎉 <strong>Welcome to the Atelier Circle!</strong> Your exclusive 20% privilege code is active: <strong style={{ color: '#c8a24a' }}>VIP20</strong>. Apply at checkout for immediate discount.
               </div>
             ) : (
               <form
