@@ -108,7 +108,9 @@ const db = {
     if (sqliteDb) {
       return sqliteDb.prepare(sql).run(...params);
     }
-    return getMemoryStore().run(sql, params);
+    throw new Error(
+      'DATABASE_READ_ONLY: The store is currently running in showcase fallback mode. Orders, mutations, and database writes are disabled until a persistent PostgreSQL database is connected.'
+    );
   },
 
   async exec(sql) {
@@ -118,7 +120,11 @@ const db = {
     if (sqliteDb) {
       return sqliteDb.exec(sql);
     }
-    return getMemoryStore().exec(sql);
+    throw new Error(
+      'No persistent database configured. The app cannot run without a database. ' +
+      'Set DATABASE_URL for PostgreSQL (Vercel Postgres, Neon, Supabase), or ' +
+      'run locally with SQLite (npm install better-sqlite3).'
+    );
   },
 
   prepare(sql) {
