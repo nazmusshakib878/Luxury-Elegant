@@ -25,6 +25,15 @@ export async function GET() {
 export async function POST(request) {
   try {
     await initSchema();
+
+    // CRITICAL SAFETY CONSTRAINT: Never allow in-memory fallback to accept real orders or payments.
+    if (db.isFallback) {
+      return NextResponse.json(
+        { error: 'Order placement and payments are disabled in catalog browsing mode. A connected PostgreSQL production database (DATABASE_URL) is required to process live customer orders.' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { name, phone, address, area, items, coupon: couponCode, method } = body;
 

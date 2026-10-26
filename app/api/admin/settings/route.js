@@ -17,6 +17,12 @@ export async function GET() {
 export async function PUT(request) {
   try {
     await initSchema();
+    if (db.isFallback) {
+      return NextResponse.json(
+        { error: 'Admin settings modification is disabled in read-only catalog mode. Production PostgreSQL database (DATABASE_URL) required.' },
+        { status: 503 }
+      );
+    }
     const body = await request.json();
 
     for (const [key, val] of Object.entries(body)) {

@@ -73,6 +73,12 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     await initSchema();
+    if (db.isFallback) {
+      return NextResponse.json(
+        { error: 'Product updating is disabled in read-only catalog mode. Production PostgreSQL database required.' },
+        { status: 503 }
+      );
+    }
     const { id } = await params;
     const body = await request.json();
     const { name, cat_id, price, sale_price, stock, image, description, variants, active } = body;
@@ -112,6 +118,12 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await initSchema();
+    if (db.isFallback) {
+      return NextResponse.json(
+        { error: 'Product deletion is disabled in read-only catalog mode. Production PostgreSQL database required.' },
+        { status: 503 }
+      );
+    }
     const { id } = await params;
     await db.run('DELETE FROM products WHERE id = ?', [id]);
     return NextResponse.json({ success: true });

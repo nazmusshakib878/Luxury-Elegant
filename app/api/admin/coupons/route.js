@@ -15,6 +15,12 @@ export async function GET() {
 export async function POST(request) {
   try {
     await initSchema();
+    if (db.isFallback) {
+      return NextResponse.json(
+        { error: 'Coupon creation is disabled in read-only catalog mode. Production PostgreSQL database required.' },
+        { status: 503 }
+      );
+    }
     const body = await request.json();
     const { code, percent } = body;
 
@@ -38,6 +44,12 @@ export async function POST(request) {
 export async function DELETE(request) {
   try {
     await initSchema();
+    if (db.isFallback) {
+      return NextResponse.json(
+        { error: 'Coupon deletion is disabled in read-only catalog mode. Production PostgreSQL database required.' },
+        { status: 503 }
+      );
+    }
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     if (!code) {

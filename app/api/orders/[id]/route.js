@@ -32,6 +32,12 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     await initSchema();
+    if (db.isFallback) {
+      return NextResponse.json(
+        { error: 'Order updating is disabled in read-only catalog mode. Production PostgreSQL database required.' },
+        { status: 503 }
+      );
+    }
     const { id } = await params;
     const body = await request.json();
     const { status, payment_status } = body;

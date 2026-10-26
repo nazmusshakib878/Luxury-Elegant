@@ -105,6 +105,12 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     await initSchema();
+    if (db.isFallback) {
+      return NextResponse.json(
+        { error: 'Product creation is disabled in read-only catalog mode. Production PostgreSQL database required.' },
+        { status: 503 }
+      );
+    }
     const body = await request.json();
     const { name, cat_id, price, sale_price, stock, image, description, variants } = body;
 

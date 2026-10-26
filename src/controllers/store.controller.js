@@ -218,6 +218,12 @@ exports.captureCart = async (req, res) => {
 };
 
 exports.createOrder = async (req, res) => {
+  if (db.isFallback) {
+    return res.status(503).json({
+      error: 'Order placement and payments are disabled in catalog browsing mode. A connected PostgreSQL production database (DATABASE_URL) is required to process live customer orders.',
+    });
+  }
+
   const { name, phone, address, area, items, coupon, method } = req.body;
   if (!name || !phone || !address || !items || !items.length) {
     throw new Error('Name, phone, address, and cart items are required');

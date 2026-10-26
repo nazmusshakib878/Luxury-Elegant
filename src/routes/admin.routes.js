@@ -7,6 +7,17 @@ const admin = require('../controllers/admin.controller');
 // All admin routes require at least staff/admin credentials
 router.use(requireStaffOrAdmin);
 
+// CRITICAL SAFETY CONSTRAINT: Block all data mutations if running in fallback mode
+const db = require('../database/connection');
+router.use((req, res, next) => {
+  if (req.method !== 'GET' && db.isFallback) {
+    return res.status(503).json({
+      error: 'Admin data mutations are strictly disabled in read-only catalog mode. A production PostgreSQL database (DATABASE_URL) is required to manage products, orders, and store settings.',
+    });
+  }
+  next();
+});
+
 // Realtime SSE stream
 router.get('/events', admin.getEvents);
 

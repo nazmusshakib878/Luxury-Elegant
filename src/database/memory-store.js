@@ -252,131 +252,28 @@ class MemoryStore {
     this.loadSeed();
     const cleanSql = sql.trim();
 
-    // INSERT INTO orders
+    // CRITICAL SAFETY CONSTRAINT: Never allow in-memory fallback to accept real orders, payments, inventory updates, or admin changes.
     if (/INSERT\s+INTO\s+orders/i.test(cleanSql)) {
-      const newId = this.orders.length > 0 ? Math.max(...this.orders.map((o) => o.id)) + 1 : 1001;
-      const order = {
-        id: newId,
-        user_id: params[0] || null,
-        name: params[1] || '',
-        phone: params[2] || '',
-        address: params[3] || '',
-        area: params[4] || 'inside_dhaka',
-        items: params[5] || '[]',
-        subtotal: +params[6] || 0,
-        discount: +params[7] || 0,
-        shipping: +params[8] || 0,
-        total: +params[9] || 0,
-        coupon: params[10] || '',
-        method: params[11] || 'cod',
-        payment_status: params[12] || 'unpaid',
-        status: params[13] || 'pending',
-        created: new Date().toISOString(),
-      };
-      this.orders.unshift(order);
-      return { changes: 1, lastInsertRowid: newId };
+      throw new Error('Order placement and payment processing are strictly disabled in read-only catalog fallback mode. A connected PostgreSQL database (DATABASE_URL) is required for transactions.');
     }
 
-    // INSERT INTO reviews
-    if (/INSERT\s+INTO\s+reviews/i.test(cleanSql)) {
-      const newId = this.reviews.length > 0 ? Math.max(...this.reviews.map((r) => r.id)) + 1 : 1;
-      const review = {
-        id: newId,
-        product_id: Number(params[0]),
-        user_name: params[1] || 'Verified Client',
-        rating: Number(params[2]) || 5,
-        comment: params[3] || '',
-        created: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      };
-      this.reviews.push(review);
-      return { changes: 1, lastInsertRowid: newId };
-    }
-
-    // INSERT INTO products
-    if (/INSERT\s+INTO\s+products/i.test(cleanSql)) {
-      const newId = this.products.length > 0 ? Math.max(...this.products.map((p) => p.id)) + 1 : 1;
-      const product = {
-        id: newId,
-        name: params[0] || '',
-        cat_id: params[1] ? Number(params[1]) : 1,
-        price: +params[2] || 0,
-        sale_price: params[3] ? +params[3] : null,
-        stock: +params[4] || 0,
-        image: params[5] || '',
-        description: params[6] || '',
-        variants: params[7] || '{}',
-        flash_end: null,
-        active: 1,
-      };
-      this.products.push(product);
-      return { changes: 1, lastInsertRowid: newId };
-    }
-
-    // INSERT INTO settings
-    if (/INSERT\s+INTO\s+settings|INSERT\s+OR\s+REPLACE\s+INTO\s+settings/i.test(cleanSql)) {
-      const k = params[0];
-      const v = String(params[1] ?? '');
-      const existing = this.settings.find((s) => s.k === k);
-      if (existing) {
-        existing.v = v;
-      } else {
-        this.settings.push({ k, v });
-      }
-      return { changes: 1 };
-    }
-
-    // INSERT INTO coupons
-    if (/INSERT\s+INTO\s+coupons/i.test(cleanSql)) {
-      const code = String(params[0] || '').toUpperCase().trim();
-      const percent = +params[1] || 10;
-      const active = params[2] !== undefined ? +params[2] : 1;
-      const existing = this.coupons.find((c) => c.code === code);
-      if (existing) {
-        existing.percent = percent;
-        existing.active = active;
-      } else {
-        this.coupons.push({ code, percent, active });
-      }
-      return { changes: 1 };
-    }
-
-    // UPDATE products SET stock
     if (/UPDATE\s+products\s+SET\s+stock/i.test(cleanSql)) {
-      const qty = +params[0] || 0;
-      const pid = Number(params[1]);
-      const prod = this.products.find((p) => p.id === pid);
-      if (prod) {
-        prod.stock = Math.max(0, (prod.stock || 0) - qty);
-      }
-      return { changes: 1 };
+      throw new Error('Inventory mutation is strictly disabled in read-only catalog fallback mode.');
     }
 
-    // UPDATE orders SET status
-    if (/UPDATE\s+orders\s+SET/i.test(cleanSql)) {
-      const orderId = Number(params[params.length - 1]);
-      const ord = this.orders.find((o) => o.id === orderId);
-      if (ord) {
-        if (/status\s*=\s*\?/i.test(cleanSql)) ord.status = params[0];
-        if (/payment_status\s*=\s*\?/i.test(cleanSql)) ord.payment_status = params[0];
-      }
-      return { changes: 1 };
+    if (/UPDATE\s+orders/i.test(cleanSql)) {
+      throw new Error('Order status update is strictly disabled in read-only catalog fallback mode.');
     }
 
-    // DELETE FROM products
-    if (/DELETE\s+FROM\s+products/i.test(cleanSql)) {
-      const pid = Number(params[0]);
-      this.products = this.products.filter((p) => p.id !== pid);
-      return { changes: 1 };
+    if (/INSERT\s+INTO\s+(?:products|settings|coupons|users|abandoned)/i.test(cleanSql)) {
+      throw new Error('Data mutation is strictly disabled in read-only catalog fallback mode. Production database required.');
     }
 
-    // DELETE FROM coupons
-    if (/DELETE\s+FROM\s+coupons/i.test(cleanSql)) {
-      const code = String(params[0] || '').toUpperCase().trim();
-      this.coupons = this.coupons.filter((c) => c.code !== code);
-      return { changes: 1 };
+    if (/DELETE\s+FROM/i.test(cleanSql)) {
+      throw new Error('Deletion is strictly disabled in read-only catalog fallback mode.');
     }
 
-    return { changes: 1 };
+    return { changes: 0, lastInsertRowid: null };
   }
 
   exec(sql) {
