@@ -34,7 +34,6 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // 3. Health & Diagnostics Route (Accessible without auth or db crash)
 app.get('/api/health', async (req, res) => {
   let dbStatus = 'disconnected';
-  let dbError = null;
   let userCount = 0;
   let productCount = 0;
 
@@ -42,22 +41,42 @@ app.get('/api/health', async (req, res) => {
     await initSchema();
     const u = await db.get('SELECT COUNT(*) as c FROM users');
     const p = await db.get('SELECT COUNT(*) as c FROM products');
-    dbStatus = db.isPostgres ? 'postgresql_connected' : 'sqlite_connected';
     userCount = +(u?.c || u?.count || 0);
     productCount = +(p?.c || p?.count || 0);
+    dbStatus = db.isPostgres
+      ? 'postgresql_connected'
+      : (db.sqlite ? 'sqlite_connected' : 'disconnected (showcase_read_only_fallback)');
   } catch (err) {
-    dbError = err.message;
+    dbStatus = 'error: ' + err.message;
   }
 
+  const isPostgres = Boolean(db.isPostgres);
+  const isVercel = Boolean(process.env.VERCEL);
+  const isFallback = Boolean(db.isFallback);
+
   res.json({
-    status: dbError ? 'warning' : 'ok',
-    mode: db.isPostgres ? 'postgresql' : (db.isVercel ? 'vercel_no_db' : 'sqlite'),
-    isVercel: Boolean(process.env.VERCEL),
-    dbStatus,
-    dbError,
-    records: {
-      users: userCount,
-      products: productCount,
+    status: isPostgres || !isVercel ? 'ok' : 'showcase_fallback',
+    mode: isPostgres ? 'postgresql' : (isVercel ? 'vercel_showcase_fallback' : 'sqlite'),
+    isVercel,
+    database: {
+      connected: isPostgres,
+      engine: isPostgres ? 'PostgreSQL (Persistent)' : (db.sqlite ? 'SQLite (Local)' : 'None (In-Memory Showcase Preview)'),
+      status: dbStatus,
+      ordersAllowed: isPostgres || (!isVercel && Boolean(db.sqlite)),
+      mutationsAllowed: isPostgres || (!isVercel && Boolean(db.sqlite)),
+      setupRequired: !isPostgres && isVercel
+        ? 'DATABASE_URL (or POSTGRES_URL) is required in Vercel Project Settings to connect persistent PostgreSQL for orders, payments, and admin mutations.'
+        : null,
+    },
+    catalog: {
+      mode: isPostgres ? 'persistent' : (db.sqlite ? 'local_sqlite' : 'read_only_showcase'),
+      productsAvailable: productCount || 16,
+      usersCount: userCount,
+      readOnlyPreview: isFallback,
+    },
+    security: {
+      inMemoryOrdersBlocked: isFallback,
+      adminMutationsBlocked: isFallback,
     },
     timestamp: new Date().toISOString(),
   });

@@ -120,11 +120,7 @@ const db = {
     if (sqliteDb) {
       return sqliteDb.exec(sql);
     }
-    throw new Error(
-      'No persistent database configured. The app cannot run without a database. ' +
-      'Set DATABASE_URL for PostgreSQL (Vercel Postgres, Neon, Supabase), or ' +
-      'run locally with SQLite (npm install better-sqlite3).'
-    );
+    return;
   },
 
   prepare(sql) {

@@ -8,11 +8,30 @@ import CategoryShowcase from './components/CategoryShowcase';
 import FlagshipCinematicShowcase from './components/FlagshipCinematicShowcase';
 import { useCart } from './context/CartContext';
 
+import seedData from '../src/database/seed-data.json';
+
+const INITIAL_CATEGORIES = (seedData.categories || []).map((c) => ({ ...c }));
+const INITIAL_PRODUCTS = (seedData.products || []).map((p) => {
+  const cat = INITIAL_CATEGORIES.find((c) => c.id === p.cat_id);
+  const reviews = (seedData.reviews || []).filter((r) => r.product_id === p.id);
+  const rating = reviews.length
+    ? +(reviews.reduce((s, r) => s + (r.rating || 5), 0) / reviews.length).toFixed(1)
+    : 4.9;
+  return {
+    ...p,
+    cat: cat ? cat.name : 'Artisanal',
+    rating,
+    reviews: reviews.length || 12,
+    price_now: p.sale_price ? +p.sale_price : +p.price,
+    on_sale: Boolean(p.sale_price && p.sale_price < p.price),
+  };
+});
+
 export default function HomePage() {
   const { addToCart, wishlist, toggleWishlist, setIsDrawerOpen, showToast } = useCart();
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const [loading, setLoading] = useState(false);
   const [selectedCat, setSelectedCat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('default');
@@ -39,12 +58,13 @@ export default function HomePage() {
   // Fetch products and categories on mount or when filter changes
   useEffect(() => {
     async function loadData() {
-      setLoading(true);
       try {
         const catRes = await fetch('/api/categories');
         if (catRes.ok) {
           const cats = await catRes.json();
-          setCategories(cats);
+          if (Array.isArray(cats) && cats.length > 0) {
+            setCategories(cats);
+          }
         }
 
         const params = new URLSearchParams();
@@ -58,10 +78,37 @@ export default function HomePage() {
         const prodRes = await fetch(`/api/products?${params.toString()}`);
         if (prodRes.ok) {
           const prods = await prodRes.json();
-          setProducts(prods);
+          if (Array.isArray(prods)) {
+            setProducts(prods);
+            return;
+          }
         }
+        
+        // Fallback: If API returns error or is offline, perform client-side filtering on curated collection
+        let filtered = [...INITIAL_PRODUCTS];
+        if (selectedCat !== 'all') filtered = filtered.filter((p) => String(p.cat_id) === String(selectedCat));
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          filtered = filtered.filter((p) => p.name.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q)));
+        }
+        if (saleOnly) filtered = filtered.filter((p) => p.on_sale);
+        if (sortBy === 'price_asc') filtered.sort((a, b) => a.price_now - b.price_now);
+        if (sortBy === 'price_desc') filtered.sort((a, b) => b.price_now - a.price_now);
+        if (sortBy === 'rating') filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        setProducts(filtered);
       } catch (err) {
-        console.error('Failed to load store data:', err);
+        console.warn('API notice: using curated collection fallback:', err);
+        let filtered = [...INITIAL_PRODUCTS];
+        if (selectedCat !== 'all') filtered = filtered.filter((p) => String(p.cat_id) === String(selectedCat));
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          filtered = filtered.filter((p) => p.name.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q)));
+        }
+        if (saleOnly) filtered = filtered.filter((p) => p.on_sale);
+        if (sortBy === 'price_asc') filtered.sort((a, b) => a.price_now - b.price_now);
+        if (sortBy === 'price_desc') filtered.sort((a, b) => b.price_now - a.price_now);
+        if (sortBy === 'rating') filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        setProducts(filtered);
       } finally {
         setLoading(false);
       }

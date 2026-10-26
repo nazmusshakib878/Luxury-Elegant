@@ -306,15 +306,23 @@ async function renderHome() {
     disposeWatch3DExperience();
   }
   const queryParams = new URLSearchParams(Object.entries(queryState).filter(([, v]) => v));
-  const [products, flashSale] = await Promise.all([
-    api('/products?' + queryParams.toString()),
-    api('/products?sale=1'),
-  ]);
+  let products = [];
+  let flashSale = [];
+  try {
+    const [pRes, fRes] = await Promise.all([
+      api('/products?' + queryParams.toString()),
+      api('/products?sale=1'),
+    ]);
+    products = Array.isArray(pRes) ? pRes : [];
+    flashSale = Array.isArray(fRes) ? fRes : [];
+  } catch (err) {
+    console.warn('Products API notice:', err.message);
+  }
 
   window.allLoadedProducts = products;
 
   // Curate Best Sellers (top 4 products by rating/reviews or price)
-  const bestSellers = [...products]
+  const bestSellers = (Array.isArray(products) ? [...products] : [])
     .sort((a, b) => (b.reviews || 0) * (b.rating || 4) - (a.reviews || 0) * (a.rating || 4) || b.price - a.price)
     .slice(0, 4);
 
@@ -1277,7 +1285,12 @@ async function route() {
 // App Initialization
 (async () => {
   try {
-    [cfg, cats] = await Promise.all([api('/settings'), api('/categories')]);
+    const [fetchedCfg, fetchedCats] = await Promise.all([
+      api('/settings').catch(() => null),
+      api('/categories').catch(() => null),
+    ]);
+    if (fetchedCfg && typeof fetchedCfg === 'object') Object.assign(cfg, fetchedCfg);
+    if (Array.isArray(fetchedCats) && fetchedCats.length > 0) cats = fetchedCats;
 
     const logo = $('#logo');
     const footerLogo = $('#flogo');
@@ -1293,11 +1306,11 @@ async function route() {
     if (bar) {
       bar.textContent = `Free delivery on orders above ${money(cfg.free_ship)} · Cash on Delivery available across Bangladesh`;
     }
-
+  } catch (err) {
+    console.warn('Initialization notice:', err);
+  } finally {
     save();
     window.addEventListener('hashchange', route);
     route();
-  } catch (err) {
-    console.error('Initialization error:', err);
   }
 })();
