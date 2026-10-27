@@ -73,7 +73,7 @@ function toPgSql(sql) {
   }
 
   // If INSERT into a table with an 'id' and RETURNING is not specified, add RETURNING id
-  if (/^\s*INSERT\s+INTO\s+(orders|products|users|reviews|categories)\b/i.test(converted) && !/RETURNING/i.test(converted)) {
+  if (/^\s*INSERT\s+INTO\s+(orders|products|users|reviews|categories|customer_addresses|product_variants|courier_shipments)\b/i.test(converted) && !/RETURNING/i.test(converted)) {
     converted += ' RETURNING id';
   }
 

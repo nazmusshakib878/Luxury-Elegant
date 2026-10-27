@@ -37,7 +37,7 @@ test('courier booking is idempotent, tracking is private, and notification failu
     assert.equal(firstData.shipment.status, 'manual_required');
     const duplicate = await request(courier.POST, '/api/admin/courier', 'POST', { order_id: 8701, provider: 'steadfast' }, headers);
     assert.equal((await duplicate.json()).shipment.id, firstData.shipment.id);
-    assert.equal((await db.get('SELECT COUNT(*) AS count FROM courier_shipments WHERE order_id = 8701')).count, 1);
+    assert.equal(Number((await db.get('SELECT COUNT(*) AS count FROM courier_shipments WHERE order_id = 8701')).count), 1);
 
     const guestToken = crypto.randomBytes(32).toString('hex');
     await db.run("INSERT INTO orders (id,name,phone,address,area,items,subtotal,discount,shipping,total,method,status,guest_access_token_hash,guest_access_token_expires) VALUES (8702,'Guest','01712345678','Private Road','dhaka','[]',500,0,0,500,'cod','shipped',?,?)", [crypto.createHash('sha256').update(guestToken).digest('hex'), new Date(Date.now() + 60000).toISOString()]);
@@ -63,7 +63,7 @@ test('courier booking is idempotent, tracking is private, and notification failu
       await enqueueOrderEvent(tx, { order: { id: 8701, user_id: null, total: 500, status: 'delivered' }, eventType: 'order_delivered' });
       await enqueueOrderEvent(tx, { order: { id: 8701, user_id: null, total: 500, status: 'delivered' }, eventType: 'order_delivered' });
     });
-    assert.equal((await db.get("SELECT COUNT(*) AS count FROM notification_outbox WHERE event_key = 'order_delivered:8701:admin'")).count, 1, 'event uniqueness prevents duplicates');
+    assert.equal(Number((await db.get("SELECT COUNT(*) AS count FROM notification_outbox WHERE event_key = 'order_delivered:8701:admin'")).count), 1, 'event uniqueness prevents duplicates');
 
     process.env.EMAIL_PROVIDER_URL = 'https://mail-provider.invalid/send'; process.env.EMAIL_PROVIDER_TOKEN = 'test-only-token';
     delete require.cache[require.resolve('../src/config/env.js')];

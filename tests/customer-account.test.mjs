@@ -19,9 +19,10 @@ function load(relative, methods) {
   mod._compile(source, filename); return mod.exports;
 }
 const db = require('../src/database/connection.js'), { initSchema } = require('../src/database/schema.js');
-const { generateToken, hashPassword } = require('../src/utils/security.js');
+const { hashPassword } = require('../src/utils/security.js');
 const login = load('../app/api/auth/login/route.js', ['POST']), register = load('../app/api/auth/register/route.js', ['POST']);
 const me = load('../app/api/auth/me/route.js', ['GET']), logout = load('../app/api/auth/logout/route.js', ['POST']);
+const adminStats = load('../app/api/admin/stats/route.js', ['GET']);
 const customerOrders = load('../app/api/account/orders/route.js', ['GET']), addresses = load('../app/api/account/addresses/route.js', ['GET', 'POST']);
 const customerOrder = load('../app/api/account/orders/[id]/route.js', ['GET']);
 const request = (handler, url, method = 'GET', body = {}, headers = {}, context = undefined) => handler(new Request(`http://localhost${url}`, { method, headers: { 'Content-Type': 'application/json', Origin: 'http://localhost', ...headers }, ...(method === 'GET' ? {} : { body: JSON.stringify(body) }) }), context);
@@ -29,6 +30,15 @@ const request = (handler, url, method = 'GET', body = {}, headers = {}, context 
 test('customer registration/login creates cookie sessions distinct from admin bearer credentials', async () => {
   try {
     await initSchema();
+    const testAdminEmail = `admin-${crypto.randomUUID()}@example.test`;
+    const testAdminPassword = crypto.randomBytes(24).toString('base64url');
+    await db.run("INSERT INTO users (name,email,pass,role) VALUES ('Disposable Test Admin',?,?, 'admin')", [testAdminEmail, hashPassword(testAdminPassword)]);
+    const adminLogin = await request(login.POST, '/api/auth/login', 'POST', { email: testAdminEmail, password: testAdminPassword });
+    assert.equal(adminLogin.status, 200, 'admin can authenticate with the stored password hash');
+    const adminSession = await adminLogin.json();
+    assert.equal(adminSession.user.isAdmin, true);
+    const adminToken = adminSession.token;
+    assert.equal((await request(adminStats.GET, '/api/admin/stats', 'GET', {}, { Authorization: `Bearer ${adminToken}` })).status, 200, 'admin token authorizes admin operations');
     const registered = await request(register.POST, '/api/auth/register', 'POST', { name: 'Customer One', email: 'one@example.test', phone: '01712345678', password: 'long-password-123' });
     assert.equal(registered.status, 200);
     const cookie = registered.headers.get('set-cookie');
@@ -39,7 +49,6 @@ test('customer registration/login creates cookie sessions distinct from admin be
     assert.ok(customer.pass.includes(':'));
     const sessionHeaders = { cookie: cookie.split(';')[0] };
     assert.equal((await (await request(me.GET, '/api/auth/me', 'GET', {}, sessionHeaders)).json()).user.id, customer.id);
-    const adminToken = generateToken({ id: 999, role: 'admin', name: 'Admin' });
     assert.equal((await request(customerOrders.GET, '/api/account/orders', 'GET', {}, { Authorization: `Bearer ${adminToken}` })).status, 401);
     assert.equal((await request(logout.POST, '/api/auth/logout', 'POST', {}, sessionHeaders)).status, 200);
     assert.match((await request(logout.POST, '/api/auth/logout', 'POST', {}, sessionHeaders)).headers.get('set-cookie'), /Max-Age=0/i);
@@ -55,7 +64,9 @@ test('customer registration/login creates cookie sessions distinct from admin be
     const visible = await (await request(customerOrders.GET, '/api/account/orders', 'GET', {}, loggedInHeaders)).json();
     assert.equal(visible.length, 1, 'only owner order is listed');
     assert.equal((await request(customerOrder.GET, '/api/account/orders/2', 'GET', {}, loggedInHeaders, { params: Promise.resolve({ id: '2' }) })).status, 404, 'another customer order is not addressable by ID');
-    assert.equal((await request(addresses.POST, '/api/account/addresses', 'POST', { label: 'Home', recipient_name: 'One', phone: '01712345678', address: 'Private Street 12', area: 'dhaka', is_default: true }, loggedInHeaders)).status, 201);
+    const savedAddress = await request(addresses.POST, '/api/account/addresses', 'POST', { label: 'Home', recipient_name: 'One', phone: '01712345678', address: 'Private Street 12', area: 'dhaka', is_default: true }, loggedInHeaders);
+    assert.equal(savedAddress.status, 201);
+    assert.ok(Number.isSafeInteger((await savedAddress.json()).address.id), 'PostgreSQL returns the newly saved address ID');
     assert.equal((await request(addresses.GET, '/api/account/addresses', 'GET', {}, { Authorization: `Bearer ${adminToken}` })).status, 401);
     assert.equal((await request(addresses.GET, '/api/account/addresses', 'GET', {}, loggedInHeaders)).status, 200);
 

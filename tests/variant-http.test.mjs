@@ -109,6 +109,7 @@ test('HTTP variant checkout, SKU management, idempotency, stock restore, rollbac
     assert.equal(invalidSku.status, 400);
     const addVariant = await http(variantsAdmin.POST, '/api/admin/products/9001/variants', { size: 'XL', color: 'Gold', sku: 'COAT-XL-G', price: 250, stock: 4 }, adminHeaders, productContext);
     assert.equal(addVariant.status, 200);
+    assert.ok(Number.isSafeInteger((await addVariant.json()).id), 'PostgreSQL returns the newly created variant ID');
     const duplicateAcrossTypes = await http(productsAdmin.POST, '/api/products', { name: 'Collision', sku: 'coat-xl-g', price: 400, stock: 1 }, adminHeaders);
     assert.equal(duplicateAcrossTypes.status, 409);
     const globalRace = await Promise.all([
@@ -152,12 +153,22 @@ test('HTTP variant checkout, SKU management, idempotency, stock restore, rollbac
     const duplicateLinesOrder = await checkoutRequest([{ id: 9001, variant_id: 9012, qty: 1 }, { id: 9001, variant_id: 9012, qty: 1 }]);
     assert.equal(duplicateLinesOrder.status, 200);
     const duplicateOrderId = (await duplicateLinesOrder.json()).order_id;
-    await db.run("CREATE TRIGGER fail_restoration BEFORE INSERT ON order_stock_restorations BEGIN SELECT RAISE(ABORT, 'restore failure'); END");
+    if (db.isPostgres) {
+      await db.exec("CREATE OR REPLACE FUNCTION fail_restoration() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'restore failure'; END $$");
+      await db.exec('CREATE TRIGGER fail_restoration BEFORE INSERT ON order_stock_restorations FOR EACH ROW EXECUTE FUNCTION fail_restoration()');
+    } else {
+      await db.run("CREATE TRIGGER fail_restoration BEFORE INSERT ON order_stock_restorations BEGIN SELECT RAISE(ABORT, 'restore failure'); END");
+    }
     const failedRestore = await orderStatus.PUT(new Request(`http://localhost/api/orders/${duplicateOrderId}`, { method: 'PUT', headers: { ...adminHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'returned' }) }), { params: Promise.resolve({ id: String(duplicateOrderId) }) });
     assert.equal(failedRestore.status, 500);
     assert.equal((await db.get('SELECT stock FROM product_variants WHERE id = 9012')).stock, 3, 'failed transaction restores no partial stock');
     assert.equal((await db.get('SELECT status FROM orders WHERE id = ?', [duplicateOrderId])).status, 'pending');
-    await db.exec('DROP TRIGGER fail_restoration');
+    if (db.isPostgres) {
+      await db.exec('DROP TRIGGER fail_restoration ON order_stock_restorations');
+      await db.exec('DROP FUNCTION fail_restoration()');
+    } else {
+      await db.exec('DROP TRIGGER fail_restoration');
+    }
     const returned = () => orderStatus.PUT(new Request(`http://localhost/api/orders/${duplicateOrderId}`, { method: 'PUT', headers: { ...adminHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'returned' }) }), { params: Promise.resolve({ id: String(duplicateOrderId) }) });
     assert.equal((await returned()).status, 200);
     assert.equal((await returned()).status, 200);
@@ -172,6 +183,7 @@ test('HTTP variant checkout, SKU management, idempotency, stock restore, rollbac
     assert.equal((await legacyCancel()).status, 200);
     assert.equal((await db.get('SELECT stock FROM products WHERE id = 9002')).stock, 5);
   } finally {
+    await db.pool?.end?.();
     db.sqlite?.close();
     rmSync(dir, { recursive: true, force: true });
   }
