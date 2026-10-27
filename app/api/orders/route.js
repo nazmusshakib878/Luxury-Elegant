@@ -10,6 +10,8 @@ const { getCustomerSessionUser } = require('../../../src/utils/customer-session'
 const { sameOrigin } = require('../../../src/utils/customer-session');
 const crypto = require('crypto');
 const { enqueueOrderEvent } = require('../../../src/services/notification-outbox');
+const { COMMERCE_ENABLED } = require('../../../src/config/env');
+const { isProductionOrderIntakeEnabled } = require('../../../src/utils/commerce-gate');
 
 export async function GET(request) {
   if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
@@ -35,6 +37,9 @@ export async function POST(request) {
   let requestHash = null;
   try {
     if (!sameOrigin(request)) return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403 });
+    if (!isProductionOrderIntakeEnabled(db.isVercel, process.env.VERCEL_ENV, COMMERCE_ENABLED)) {
+      return NextResponse.json({ error: 'Production order intake is disabled until business readiness is verified.' }, { status: 503 });
+    }
     await initSchema();
     if (db.isFallback) {
       return NextResponse.json(

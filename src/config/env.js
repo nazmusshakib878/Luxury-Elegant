@@ -71,6 +71,8 @@ module.exports = {
   CRON_SECRET: env.CRON_SECRET || '',
   DB_FILE: env.DB || 'shop.db',
   DATABASE_URL: env.DATABASE_URL || env.POSTGRES_URL || env.POSTGRES_PRISMA_URL || '',
+  // Production Vercel checkout is fail-closed until business readiness is verified.
+  COMMERCE_ENABLED: env.COMMERCE_ENABLED === '1' || env.COMMERCE_ENABLED === 'true',
 
   // Admin Bootstrap & Rotation
   ADMIN_EMAIL: (env.ADMIN_EMAIL || 'admin@shop.com').toLowerCase().trim(),

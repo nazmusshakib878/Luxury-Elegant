@@ -9,11 +9,30 @@ const isProduction = process.env.NODE_ENV === 'production' || isVercel;
 const usePostgres = Boolean(DATABASE_URL);
 let pgUnavailable = false;
 
+function postgresSslConfig(connectionString) {
+  const url = new URL(connectionString);
+  const host = url.hostname.toLowerCase();
+  const isLocal = ['localhost', '127.0.0.1', '[::1]'].includes(host);
+  if (isLocal) return false;
+
+  const sslMode = (url.searchParams.get('sslmode') || '').toLowerCase();
+  const sslValue = (url.searchParams.get('ssl') || '').toLowerCase();
+  const usesLibpqCompat = (url.searchParams.get('uselibpqcompat') || '').toLowerCase() === 'true';
+  if (
+    sslMode === 'disable' || sslMode === 'no-verify' ||
+    sslValue === '0' || sslValue === 'false' || sslValue === 'no-verify' ||
+    (usesLibpqCompat && sslMode && sslMode !== 'verify-full')
+  ) {
+    throw new Error('Remote PostgreSQL URLs must use TLS with full certificate and hostname verification.');
+  }
+  return { rejectUnauthorized: true };
+}
+
 if (usePostgres) {
   // Production PostgreSQL mode (Neon, Supabase, Vercel Postgres, etc.)
   pgPool = new Pool({
     connectionString: DATABASE_URL,
-    ssl: DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
+    ssl: postgresSslConfig(DATABASE_URL),
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
