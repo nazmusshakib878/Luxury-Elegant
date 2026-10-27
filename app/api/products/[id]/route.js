@@ -126,7 +126,7 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    const duplicate = err.code === '23505' || /unique constraint|duplicate key/i.test(err.message || '');
+    const duplicate = err.code === '23505' || /unique constraint|duplicate key|sku already assigned globally/i.test(err.message || '');
     return NextResponse.json({ error: duplicate ? 'That SKU is already assigned to another product.' : err.message }, { status: duplicate ? 409 : 500 });
   }
 }

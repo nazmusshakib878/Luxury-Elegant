@@ -30,34 +30,6 @@ export default function RootLayout({ children }) {
           {children}
           <CartDrawer />
           <Footer />
-
-          {/* Floating WhatsApp Quick Support */}
-          <a
-            href="https://wa.me/8801700000000"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              position: 'fixed',
-              bottom: '1.5rem',
-              right: '1.5rem',
-              zIndex: 40,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '3.4rem',
-              height: '3.4rem',
-              borderRadius: '9999px',
-              backgroundColor: '#25D366',
-              color: '#ffffff',
-              fontSize: '1.5rem',
-              boxShadow: '0 10px 25px rgba(37, 211, 102, 0.4)',
-              textDecoration: 'none',
-              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
-            title="Chat on WhatsApp"
-          >
-            💬
-          </a>
         </CartProvider>
       </body>
     </html>

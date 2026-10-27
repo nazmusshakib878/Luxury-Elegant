@@ -42,6 +42,12 @@ export default function AdminDashboardPage() {
   const [coupons, setCoupons] = useState([]);
   const [abandoned, setAbandoned] = useState([]);
   const [settings, setSettings] = useState({});
+  const [shipments, setShipments] = useState([]);
+  const [courierProviders, setCourierProviders] = useState({});
+  const [notifications, setNotifications] = useState([]);
+  const [failedNotifications, setFailedNotifications] = useState(0);
+  const [notificationProviders, setNotificationProviders] = useState({});
+  const [courierDraft, setCourierDraft] = useState({ order_id: '', provider: 'manual', tracking_id: '', consignment_id: '', delivery_charge: '' });
   const [loading, setLoading] = useState(false);
 
   // New product form state
@@ -58,6 +64,7 @@ export default function AdminDashboardPage() {
   // New coupon form state
   const [newCouponCode, setNewCouponCode] = useState('');
   const [newCouponPercent, setNewCouponPercent] = useState('15');
+  const [adminPass, setAdminPass] = useState({ current: '', new_pass: '' });
 
   // Check login on mount
   useEffect(() => {
@@ -89,6 +96,11 @@ export default function AdminDashboardPage() {
         setAbandoned(await apiAdmin('/api/admin/abandoned'));
       } else if (activeTab === 'settings') {
         setSettings(await apiAdmin('/api/admin/settings'));
+      } else if (activeTab === 'courier') {
+        const [data, orderData] = await Promise.all([apiAdmin('/api/admin/courier'), apiAdmin('/api/orders')]);
+        setShipments(data.shipments || []); setCourierProviders(data.providers || {}); setOrders(orderData);
+      } else if (activeTab === 'notifications') {
+        const data = await apiAdmin('/api/admin/notifications'); setNotifications(data.notifications || []); setFailedNotifications(data.failed || 0); setNotificationProviders(data.providers || {});
       }
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -162,6 +174,23 @@ export default function AdminDashboardPage() {
     } catch (err) {
       alert('Failed to update status');
     }
+  };
+
+  const createCourierShipment = async (event) => {
+    event.preventDefault();
+    try {
+      await apiAdmin('/api/admin/courier', { method: 'POST', body: JSON.stringify({ ...courierDraft, order_id: Number(courierDraft.order_id), delivery_charge: courierDraft.delivery_charge === '' ? null : Number(courierDraft.delivery_charge) }) });
+      const data = await apiAdmin('/api/admin/courier'); setShipments(data.shipments || []); alert('Shipment record saved. Add the courier tracking reference after booking in the courier portal.');
+    } catch (err) { alert(err.message); }
+  };
+  const updateShipment = async (shipment, status, references = {}) => {
+    try { await apiAdmin('/api/admin/courier', { method: 'PATCH', body: JSON.stringify({ id: shipment.id, status, tracking_id: references.tracking_id ?? shipment.tracking_id, consignment_id: references.consignment_id ?? shipment.consignment_id }) }); const data = await apiAdmin('/api/admin/courier'); setShipments(data.shipments || []); }
+    catch (err) { alert(err.message); }
+  };
+  const editCourierReferences = async (shipment) => {
+    const tracking_id = window.prompt('Courier tracking ID', shipment.tracking_id || ''); if (tracking_id === null) return;
+    const consignment_id = window.prompt('Courier consignment ID', shipment.consignment_id || ''); if (consignment_id === null) return;
+    await updateShipment(shipment, shipment.status, { tracking_id, consignment_id });
   };
 
   const handleCreateProduct = async (e) => {
@@ -271,6 +300,23 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleUpdateAdminPassword = async (e) => {
+    e.preventDefault();
+    try {
+      const data = await apiAdmin('/api/admin/password', {
+        method: 'POST',
+        body: JSON.stringify({
+          current_password: adminPass.current,
+          new_password: adminPass.new_pass,
+        }),
+      });
+      alert(data.message || 'Admin password updated.');
+      setAdminPass({ current: '', new_pass: '' });
+    } catch (err) {
+      alert(err.message || 'Failed to update password');
+    }
+  };
+
   if (!isLoggedIn) {
     return (
       <>
@@ -374,6 +420,8 @@ export default function AdminDashboardPage() {
           {[
             { id: 'stats', label: '📊 Overview' },
             { id: 'orders', label: '📦 Orders' },
+            { id: 'courier', label: '🚚 Courier' },
+            { id: 'notifications', label: `🔔 Notifications${failedNotifications ? ` (${failedNotifications})` : ''}` },
             { id: 'products', label: '💎 Catalog' },
             { id: 'coupons', label: '🎟️ Coupons' },
             { id: 'abandoned', label: '💬 Abandoned Carts' },
@@ -444,7 +492,7 @@ export default function AdminDashboardPage() {
                               </span>
                             </td>
                             <td style={{ padding: '0.75rem' }}>
-                              <Link href={`/invoice/${ro.id}?phone=${ro.phone}`} target="_blank" style={{ color: '#c8a24a', textDecoration: 'none', fontWeight: 600 }}>
+                              <Link href={`/invoice/${ro.id}`} target="_blank" style={{ color: '#c8a24a', textDecoration: 'none', fontWeight: 600 }}>
                                 📄 View
                               </Link>
                             </td>
@@ -515,7 +563,7 @@ export default function AdminDashboardPage() {
                         </select>
                       </td>
                       <td style={{ padding: '0.75rem' }}>
-                        <Link href={`/invoice/${o.id}?phone=${o.phone}`} target="_blank" className="btn btn-gold" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
+                        <Link href={`/invoice/${o.id}`} target="_blank" className="btn btn-gold" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}>
                           Invoice
                         </Link>
                       </td>
@@ -526,6 +574,27 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
+
+        {activeTab === 'courier' && <section style={{ display: 'grid', gap: '1rem' }}>
+          <form onSubmit={createCourierShipment} style={{ background: '#fff', border: '1px solid #e7e5e4', borderRadius: '1.25rem', padding: '1.5rem' }}>
+            <h3 className="font-serif" style={{ color: '#0f3d2e', marginTop: 0 }}>Create Courier Booking Record</h3>
+            <p style={{ color: '#78716c', fontSize: '.85rem' }}>Courier API credentials are not used for live booking until provider contracts are verified. Create the shipment in the selected courier portal and save its reference here.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(12rem,1fr))', gap: '.75rem' }}>
+              <select className="inp" required value={courierDraft.order_id} onChange={e => setCourierDraft({ ...courierDraft, order_id: e.target.value })}><option value="">Select confirmed order</option>{orders.filter(o => ['confirmed','processing','shipped'].includes(o.status)).map(o => <option key={o.id} value={o.id}>#{o.id} · {o.name} · ৳{formatPrice(o.total)}</option>)}</select>
+              <select className="inp" value={courierDraft.provider} onChange={e => setCourierDraft({ ...courierDraft, provider: e.target.value })}><option value="manual">Manual Courier</option><option value="steadfast">Steadfast Courier</option><option value="pathao">Pathao Courier</option></select>
+              <input className="inp" placeholder="Tracking ID (optional)" value={courierDraft.tracking_id} onChange={e => setCourierDraft({ ...courierDraft, tracking_id: e.target.value })} />
+              <input className="inp" placeholder="Consignment ID (optional)" value={courierDraft.consignment_id} onChange={e => setCourierDraft({ ...courierDraft, consignment_id: e.target.value })} />
+              <input className="inp" type="number" min="0" step="1" placeholder="Delivery charge ৳" value={courierDraft.delivery_charge} onChange={e => setCourierDraft({ ...courierDraft, delivery_charge: e.target.value })} />
+            </div>
+            <button className="btn btn-gold" style={{ marginTop: '.5rem' }}>Save Shipment</button>
+            <div style={{ color:'#78716c', fontSize:'.78rem', marginTop:'.7rem' }}>Provider readiness: {Object.entries(courierProviders).map(([name, state]) => `${name}: ${state.credentials_configured ? 'credentials set; manual booking only' : 'manual tracking'}`).join(' · ')}</div>
+          </form>
+          <div style={{ background: '#fff', border: '1px solid #e7e5e4', borderRadius: '1.25rem', padding: '1.5rem' }}><h3 className="font-serif" style={{ color: '#0f3d2e' }}>Shipment Tracking</h3>
+            {shipments.length === 0 ? <p>No shipment records yet.</p> : shipments.map(s => <article key={s.id} style={{ padding: '1rem 0', borderTop: '1px solid #f5f5f4', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(10rem,1fr))', gap: '.75rem', alignItems: 'center' }}><div><strong>Order #{s.order_id}</strong><div>{s.customer_name} · {s.provider}</div><div style={{ color:'#78716c', fontSize:'.8rem' }}>Tracking: {s.tracking_id || 'Not entered'} · Consignment: {s.consignment_id || 'Not entered'}</div><button type="button" className="btn btn-o" style={{ marginTop:'.4rem', padding:'.3rem .6rem', fontSize:'.75rem' }} onClick={() => editCourierReferences(s)}>Edit References</button></div><div><strong>{s.status.replaceAll('_',' ')}</strong><div style={{ color:'#78716c', fontSize:'.8rem' }}>Delivery charge: {s.delivery_charge == null ? 'Not set' : `৳${formatPrice(s.delivery_charge)}`}</div><details style={{ fontSize:'.78rem', marginTop:'.4rem' }}><summary>Activity log ({s.activity?.length || 0})</summary>{(s.activity || []).map((item, index) => <div key={index}>{item.event.replaceAll('_',' ')} · {new Date(item.created).toLocaleString()}</div>)}</details></div><select className="inp" value={s.status} onChange={e => updateShipment(s, e.target.value)}>{['manual_required','booked','picked_up','in_transit','out_for_delivery','delivered','failed','cancelled'].map(v => <option key={v} value={v}>{v.replaceAll('_',' ')}</option>)}</select></article>)}
+          </div>
+        </section>}
+
+        {activeTab === 'notifications' && <section style={{ background: '#fff', border: '1px solid #e7e5e4', borderRadius: '1.25rem', padding: '1.5rem' }}><h3 className="font-serif" style={{ color:'#0f3d2e' }}>Notification History {failedNotifications > 0 && <span style={{ color:'#b91c1c', fontSize:'.9rem' }}>· {failedNotifications} failed</span>}</h3><p style={{ color:'#78716c', fontSize:'.82rem' }}>Email: {notificationProviders.email?.configured ? 'configured' : 'not configured'} · SMS: {notificationProviders.sms?.configured ? 'configured' : 'not configured'} · Webhook: {notificationProviders.webhook?.configured ? 'configured' : 'not configured'} · Scheduled delivery: {notificationProviders.scheduledDeliveryConfigured ? 'configured' : 'not configured'}</p>{notifications.length === 0 ? <p>No notification events have been recorded.</p> : notifications.map(n => <div key={n.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:'1rem', flexWrap:'wrap', padding:'.7rem 0', borderTop:'1px solid #f5f5f4' }}><div><strong>Order #{n.order_id} · {n.event_type.replaceAll('_',' ')}</strong><div style={{ color:'#78716c', fontSize:'.8rem' }}>{n.channel} · {n.status} · attempts {n.attempts} · {n.last_error || ''}</div></div>{n.status === 'failed' && <button className="btn btn-o" onClick={async () => { try { await apiAdmin('/api/admin/notifications', { method:'POST', body:JSON.stringify({ id:n.id }) }); const d = await apiAdmin('/api/admin/notifications'); setNotifications(d.notifications || []); setFailedNotifications(d.failed || 0); } catch(e) { alert(e.message); } }}>Retry</button>}</div>)}</section>}
 
         {/* Tab 3: Products Management */}
         {activeTab === 'products' && (
@@ -546,7 +615,7 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
               </div>
-              {stats?.low?.length > 0 && <div style={{ marginTop: '1rem', padding: '0.8rem', borderRadius: '0.75rem', background: '#fff7ed', color: '#9a3412' }}><strong>Low stock alerts</strong>{stats.low.map((p) => <div key={p.id}>{p.name}: {p.stock} left</div>)}</div>}
+              {stats?.low?.length > 0 && <div style={{ marginTop: '1rem', padding: '0.8rem', borderRadius: '0.75rem', background: '#fff7ed', color: '#9a3412' }}><strong>Low stock alerts</strong>{stats.low.map((p) => <div key={`${p.type || 'product'}:${p.id}`}>{p.name}: {p.stock} left</div>)}</div>}
             </div>
 
             {/* Right: Add New Product Form */}
@@ -713,10 +782,51 @@ export default function AdminDashboardPage() {
                 <label style={{ fontSize: '0.82rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Free Shipping Threshold (৳)</label>
                 <input type="number" value={settings.free_ship || 3000} onChange={(e) => setSettings({ ...settings, free_ship: e.target.value })} className="inp" />
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div><label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Steadfast courier charge (৳)</label><input type="number" min="0" value={settings.courier_charge_steadfast ?? 0} onChange={e => setSettings({ ...settings, courier_charge_steadfast: e.target.value })} className="inp" /></div>
+                <div><label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Pathao courier charge (৳)</label><input type="number" min="0" value={settings.courier_charge_pathao ?? 0} onChange={e => setSettings({ ...settings, courier_charge_pathao: e.target.value })} className="inp" /></div>
+              </div>
               <button type="submit" className="btn btn-p" style={{ marginTop: '0.5rem' }}>
                 Save Store Configuration
               </button>
             </form>
+
+            <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e7e5e4' }}>
+              <h4 className="font-serif" style={{ fontSize: '1.15rem', color: '#0f3d2e', marginBottom: '0.5rem' }}>
+                🔒 Admin Credentials &amp; Security
+              </h4>
+              <p style={{ color: '#78716c', fontSize: '0.82rem', marginBottom: '1rem' }}>
+                Change your admin password anytime to prevent unauthorized access. Passwords must be at least 10 characters.
+              </p>
+              <form onSubmit={handleUpdateAdminPassword} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Current Admin Password *</label>
+                  <input
+                    required
+                    type="password"
+                    placeholder="Enter current password"
+                    value={adminPass.current}
+                    onChange={(e) => setAdminPass({ ...adminPass, current: e.target.value })}
+                    className="inp"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>New Strong Password (10+ characters) *</label>
+                  <input
+                    required
+                    minLength={10}
+                    type="password"
+                    placeholder="Enter new strong password"
+                    value={adminPass.new_pass}
+                    onChange={(e) => setAdminPass({ ...adminPass, new_pass: e.target.value })}
+                    className="inp"
+                  />
+                </div>
+                <button type="submit" className="btn btn-gold" style={{ marginTop: '0.3rem' }}>
+                  Update Admin Password
+                </button>
+              </form>
+            </div>
           </div>
         )}
       </main>

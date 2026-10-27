@@ -12,6 +12,11 @@ const {
  * Initiate online payment transaction through selected gateway.
  */
 async function initiatePayment(order, method) {
+  // Gateways remain deliberately inactive until a verified merchant setup and
+  // signed callback flow are integrated in the Next.js order lifecycle.
+  if (process.env.PAYMENTS_ENABLED !== '1' || process.env.NODE_ENV === 'production') {
+    throw new Error('Online payments are disabled until merchant integration is verified.');
+  }
   const tranId = `ORD${order.id}`;
   const callbackUrl = (statusPath) => `${BASE_URL}/pay/${statusPath}`;
 
@@ -94,6 +99,7 @@ async function initiatePayment(order, method) {
  * Verify payment callback from gateway.
  */
 async function verifyPayment(gateway, callbackBody, order) {
+  if (process.env.PAYMENTS_ENABLED !== '1' || process.env.NODE_ENV === 'production') return false;
   if (gateway === 'ssl') {
     const endpoint = SSL_LIVE
       ? 'https://securepay.sslcommerz.com/validator/api/validationserverAPI.php'

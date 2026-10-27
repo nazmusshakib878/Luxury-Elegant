@@ -6,6 +6,10 @@ const { DEFAULT_SETTINGS } = require('../../../src/config/constants');
 const { notifyNewOrder } = require('../../../src/services/notification');
 const { isValidIdempotencyKey, hashOrderRequest } = require('../../../src/utils/order-idempotency');
 const { reserveVariantStock, reserveProductStock } = require('../../../src/services/inventory');
+const { getCustomerSessionUser } = require('../../../src/utils/customer-session');
+const { sameOrigin } = require('../../../src/utils/customer-session');
+const crypto = require('crypto');
+const { enqueueOrderEvent } = require('../../../src/services/notification-outbox');
 
 export async function GET(request) {
   if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
@@ -30,6 +34,7 @@ export async function POST(request) {
   let idempotencyKey = null;
   let requestHash = null;
   try {
+    if (!sameOrigin(request)) return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403 });
     await initSchema();
     if (db.isFallback) {
       return NextResponse.json(
@@ -42,14 +47,23 @@ export async function POST(request) {
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return NextResponse.json({ error: 'A valid order request is required.' }, { status: 400 });
     }
-    const { name, phone, address, area, items, coupon: couponCode, method = 'cod' } = body;
+    const customer = await getCustomerSessionUser(request, db);
+    const { name, phone, address, area, items, coupon: couponCode, method = 'cod', address_id } = body;
+    const guestToken = !customer && typeof body.guest_access_token === 'string' && /^[a-f0-9]{64}$/i.test(body.guest_access_token) ? body.guest_access_token.toLowerCase() : null;
+    let shippingName = name, shippingPhone = phone, shippingAddress = address, shippingArea = area;
+    if (address_id != null && !customer) return NextResponse.json({ error: 'Sign in to use a saved delivery address.' }, { status: 401 });
+    if (address_id != null) {
+      const savedAddress = await db.get('SELECT * FROM customer_addresses WHERE id = ? AND user_id = ?', [Number(address_id), customer.id]);
+      if (!savedAddress) return NextResponse.json({ error: 'Saved address not found.' }, { status: 404 });
+      shippingName = savedAddress.recipient_name; shippingPhone = savedAddress.phone; shippingAddress = savedAddress.address; shippingArea = savedAddress.area;
+    }
     idempotencyKey = request.headers.get('idempotency-key');
     if (!isValidIdempotencyKey(idempotencyKey)) {
       return NextResponse.json({ error: 'A valid Idempotency-Key is required to safely place this order.' }, { status: 400 });
     }
-    const cleanName = typeof name === 'string' ? name.trim().slice(0, 100) : '';
-    const cleanPhone = typeof phone === 'string' ? phone.replace(/[^0-9]/g, '') : '';
-    const cleanAddress = typeof address === 'string' ? address.trim().slice(0, 300) : '';
+    const cleanName = typeof shippingName === 'string' ? shippingName.trim().slice(0, 100) : '';
+    const cleanPhone = typeof shippingPhone === 'string' ? shippingPhone.replace(/[^0-9]/g, '') : '';
+    const cleanAddress = typeof shippingAddress === 'string' ? shippingAddress.trim().slice(0, 300) : '';
     if (!cleanName || !/^01[3-9]\d{8}$/.test(cleanPhone) || !cleanAddress || !Array.isArray(items) || items.length === 0 || items.length > 50) {
       return NextResponse.json({ error: 'Valid name, Bangladeshi phone, address, and cart items are required.' }, { status: 400 });
     }
@@ -68,7 +82,7 @@ export async function POST(request) {
       if (variant_id !== null && (!Number.isSafeInteger(variant_id) || variant_id <= 0)) return NextResponse.json({ error: 'Invalid product variant.' }, { status: 400 });
       requestedItems.push({ id, qty, variant_id });
     }
-    requestHash = hashOrderRequest({ name: cleanName, phone: cleanPhone, address: cleanAddress, area, items: requestedItems, coupon: couponCode });
+    requestHash = hashOrderRequest({ name: cleanName, phone: cleanPhone, address: cleanAddress, area: shippingArea, items: requestedItems, coupon: couponCode, guest_access_token: guestToken, customer_id: customer?.id || null, address_id: address_id || null });
 
     const order = await db.transaction(async (tx) => {
       const previous = await tx.get(
@@ -106,9 +120,12 @@ export async function POST(request) {
       const productSql = 'SELECT * FROM products WHERE id IN (' + placeholders + ') AND active = 1' + lockClause;
       const dbProducts = await tx.all(productSql, ids);
       const productMap = new Map(dbProducts.map((product) => [Number(product.id), product]));
+      const variantsByProductRows = await tx.all('SELECT product_id, COUNT(*) AS count FROM product_variants GROUP BY product_id');
+      const variantProductIds = new Set(variantsByProductRows.map((row) => Number(row.product_id)));
       const requiredStock = new Map();
       const requiredVariants = new Map();
       for (const item of requestedItems) {
+        if (item.variant_id == null && variantProductIds.has(item.id)) throw Object.assign(new Error('Select a size and color for ' + (productMap.get(item.id)?.name || 'this product') + '.'), { status: 409 });
         const key = item.variant_id == null ? String(item.id) : String(item.variant_id);
         const map = item.variant_id == null ? requiredStock : requiredVariants;
         map.set(Number(key), (map.get(Number(key)) || 0) + item.qty);
@@ -136,6 +153,7 @@ export async function POST(request) {
       let subtotal = 0;
       const verifiedItems = requestedItems.map((item) => {
         const product = productMap.get(item.id);
+        if (!product) throw Object.assign(new Error('Product ID #' + item.id + ' is unavailable.'), { status: 400 });
         const selectedVariant = item.variant_id == null ? null : variantMap.get(item.variant_id);
         if (item.variant_id != null && (!selectedVariant || Number(selectedVariant.product_id) !== Number(product.id))) throw Object.assign(new Error('Selected variant is unavailable for this product.'), { status: 409 });
         const regularPrice = selectedVariant ? Number(selectedVariant.price) : Number(product.price);
@@ -158,11 +176,11 @@ export async function POST(request) {
         }
       }
 
-      const shipping = subtotal >= freeShipThreshold ? 0 : area === 'dhaka' ? shipDhaka : shipOutside;
+      const shipping = subtotal >= freeShipThreshold ? 0 : shippingArea === 'dhaka' ? shipDhaka : shipOutside;
       const total = Math.max(0, subtotal - discount + shipping);
       const insert = await tx.run(
-        'INSERT INTO orders (user_id, name, phone, address, area, items, subtotal, discount, shipping, total, coupon, method, payment_status, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [null, cleanName, cleanPhone, cleanAddress, area === 'dhaka' ? 'dhaka' : 'outside', JSON.stringify(verifiedItems), subtotal, discount, shipping, total, appliedCoupon, 'cod', 'unpaid', 'pending']
+        'INSERT INTO orders (user_id, name, phone, address, area, items, subtotal, discount, shipping, total, coupon, method, payment_status, status, guest_access_token_hash, guest_access_token_expires) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [customer?.id || null, cleanName, cleanPhone, cleanAddress, shippingArea === 'dhaka' ? 'dhaka' : 'outside', JSON.stringify(verifiedItems), subtotal, discount, shipping, total, appliedCoupon, 'cod', 'unpaid', 'pending', guestToken ? crypto.createHash('sha256').update(guestToken).digest('hex') : null, guestToken ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null]
       );
 
       for (const [id, qty] of requiredStock) {
@@ -172,6 +190,8 @@ export async function POST(request) {
         await reserveVariantStock(tx, id, qty);
       }
       await tx.run('INSERT INTO order_idempotency (idempotency_key, request_hash, order_id) VALUES (?, ?, ?)', [idempotencyKey, requestHash, insert.lastInsertRowid]);
+      const recipient = customer ? await tx.get('SELECT email FROM users WHERE id = ?', [customer.id]) : null;
+      await enqueueOrderEvent(tx, { order: { id: insert.lastInsertRowid, user_id: customer?.id || null, total, status: 'pending' }, eventType: 'order_placed', customerEmail: recipient?.email || null, customerPhone: cleanPhone });
       return { orderId: insert.lastInsertRowid, subtotal, discount, shipping, total, items: verifiedItems, replayed: false };
     });
 
@@ -181,9 +201,9 @@ export async function POST(request) {
       }
     } catch {}
 
-    return NextResponse.json({ success: true, order_id: order.orderId, subtotal: order.subtotal, discount: order.discount, shipping: order.shipping, total: order.total, method: 'cod' });
+    return NextResponse.json({ success: true, order_id: order.orderId, subtotal: order.subtotal, discount: order.discount, shipping: order.shipping, total: order.total, method: 'cod', guest_access_token: guestToken });
   } catch (err) {
-    if (idempotencyKey && requestHash && /unique constraint|duplicate key/i.test(err.message || '')) {
+    if (idempotencyKey && requestHash) {
       try {
         const previous = await db.get(
           `SELECT o.id, o.subtotal, o.discount, o.shipping, o.total, o.items, k.request_hash

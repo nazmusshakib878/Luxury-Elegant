@@ -304,7 +304,7 @@ exports.createStaff = async (req, res) => {
 exports.backupDatabase = async (req, res) => {
   if (db.isPostgres) {
     // If PostgreSQL, export seed JSON
-    const tables = ['users', 'categories', 'products', 'orders', 'coupons', 'reviews', 'abandoned', 'settings'];
+    const tables = ['users', 'categories', 'products', 'orders', 'order_idempotency', 'coupons', 'reviews', 'review_verifications', 'abandoned', 'settings'];
     const backup = {};
     for (const t of tables) {
       backup[t] = await db.all(`SELECT * FROM ${t}`);

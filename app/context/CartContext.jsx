@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { sameCartLine } from '../../src/utils/cart-identity.mjs';
 
 const CartContext = createContext(null);
 
@@ -58,15 +59,23 @@ export function CartProvider({ children }) {
 
   const addToCart = (product, qty = 1, variant = null) => {
     if (!product || typeof product !== 'object') return;
+    if ((product.has_variants || product.product_variants?.length) && !variant?.id) {
+      showToast('Please select an available size and color on the product page.');
+      return;
+    }
+    if (variant && !variant.available) {
+      showToast('This variant is currently out of stock.');
+      return;
+    }
     setCart((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.id === product.id && (item.variant_id || null) === (variant?.id || null)
+        (item) => sameCartLine(item, product.id, variant?.id || null)
       );
 
-      const rawPrice = product.price_now ?? product.sale_price ?? product.price;
+      const rawPrice = variant?.price ?? product.price_now ?? product.sale_price ?? product.price;
       const validPrice = rawPrice != null && Number.isFinite(Number(rawPrice)) && Number(rawPrice) > 0 ? Number(rawPrice) : null;
       if (validPrice === null) return prev;
-      const validRegular = product.price != null && Number.isFinite(Number(product.price)) ? Number(product.price) : validPrice;
+      const validRegular = variant?.price != null && Number.isFinite(Number(variant.price)) ? Number(variant.price) : (product.price != null && Number.isFinite(Number(product.price)) ? Number(product.price) : validPrice);
       const safeQty = qty != null && !isNaN(Number(qty)) && Number(qty) > 0 ? Number(qty) : 1;
 
       if (existingIndex > -1) {
@@ -83,9 +92,9 @@ export function CartProvider({ children }) {
           price: validPrice,
           regularPrice: validRegular,
           image: product.image,
-          stock: product.stock != null && Number.isFinite(Number(product.stock)) && Number(product.stock) >= 0 ? Number(product.stock) : null,
+          stock: variant?.stock != null && Number.isFinite(Number(variant.stock)) && Number(variant.stock) >= 0 ? Number(variant.stock) : (product.stock != null && Number.isFinite(Number(product.stock)) && Number(product.stock) >= 0 ? Number(product.stock) : null),
           variant_id: variant?.id || null,
-          variant: variant ? { size: variant.size, color: variant.color, sku: variant.sku } : null,
+          variant: variant ? { id: variant.id, size: variant.size, color: variant.color, sku: variant.sku } : null,
           qty: safeQty,
         },
       ];
@@ -99,7 +108,7 @@ export function CartProvider({ children }) {
     setCart((prev) =>
       prev
         .map((item) => {
-          if (item.id === id && (item.variant_id || null) === (variant?.id || null)) {
+          if (sameCartLine(item, id, variant?.id || null)) {
             const newQty = item.qty + delta;
             return newQty > 0 ? { ...item, qty: newQty } : null;
           }
@@ -111,7 +120,7 @@ export function CartProvider({ children }) {
 
   const removeFromCart = (id, variant = null) => {
     setCart((prev) =>
-      prev.filter((item) => !(item.id === id && (item.variant_id || null) === (variant?.id || null)))
+      prev.filter((item) => !sameCartLine(item, id, variant?.id || null))
     );
     showToast('Item removed from cart');
   };

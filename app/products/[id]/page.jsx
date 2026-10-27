@@ -9,7 +9,7 @@ import { formatPrice, getProductPricing } from '../../utils/format';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
-  const { addToCart, showToast, setIsDrawerOpen } = useCart();
+  const { addToCart, showToast, setIsDrawerOpen, wishlist = [], toggleWishlist } = useCart();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
@@ -162,7 +162,7 @@ export default function ProductDetailPage() {
               alt={product.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }}
             />
-            {product.on_sale && (
+            {product.on_sale && !product.product_variants?.length && (
               <span
                 style={{
                   position: 'absolute',
@@ -242,7 +242,7 @@ export default function ProductDetailPage() {
                   <span style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0f3d2e' }}>
                     ৳{displayedPrice !== null ? formatPrice(displayedPrice) : 'Price unavailable'}
                   </span>
-                  {pricing.onSale && pricing.formattedRegular && (
+                  {!selectedVariant && pricing.onSale && pricing.formattedRegular && (
                     <span style={{ fontSize: '1.25rem', color: '#a8a29e', textDecoration: 'line-through' }}>
                       ৳{pricing.formattedRegular}
                     </span>
@@ -323,6 +323,30 @@ export default function ProductDetailPage() {
                   style={{ flex: 1, padding: '0.85rem 1.5rem', fontSize: '1rem' }}
                 >
                   {canPurchase ? `🛍️ Add to Collection (৳${formatPrice(displayedPrice * qty)})` : 'Unavailable'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => toggleWishlist && toggleWishlist(product)}
+                  style={{
+                    width: '3.1rem',
+                    height: '3.1rem',
+                    borderRadius: '9999px',
+                    backgroundColor: (wishlist || []).some((item) => item.id === product.id) ? 'rgba(225, 29, 72, 0.08)' : '#faf7f2',
+                    border: (wishlist || []).some((item) => item.id === product.id) ? '1.5px solid #e11d48' : '1.5px solid #d6d3d1',
+                    color: (wishlist || []).some((item) => item.id === product.id) ? '#e11d48' : '#78716c',
+                    fontSize: '1.25rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                  }}
+                  title={(wishlist || []).some((item) => item.id === product.id) ? 'Remove from wishlist' : 'Save to wishlist'}
+                  aria-label="Wishlist"
+                >
+                  {(wishlist || []).some((item) => item.id === product.id) ? '♥' : '♡'}
                 </button>
               </div>
 

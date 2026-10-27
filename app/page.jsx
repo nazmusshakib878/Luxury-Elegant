@@ -48,18 +48,7 @@ export default function HomePage() {
   const [quickViewQty, setQuickViewQty] = useState(1);
   const [addedId, setAddedId] = useState(null);
   const [openFaq, setOpenFaq] = useState(0);
-  const [vipEmail, setVipEmail] = useState('');
-  const [vipJoined, setVipJoined] = useState(false);
-  const [copiedCoupon, setCopiedCoupon] = useState(false);
 
-  const handleCopyCoupon = (code) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(code);
-      setCopiedCoupon(true);
-      if (showToast) showToast(`Privilege Code "${code}" copied to clipboard!`);
-      setTimeout(() => setCopiedCoupon(false), 2500);
-    }
-  };
 
   // Fetch products and categories on mount or when filter changes
   useEffect(() => {
@@ -266,44 +255,6 @@ export default function HomePage() {
                   Explore Collection
                 </a>
               </div>
-
-              {/* Verified Service Guarantees (10K+ / 4.9 ★ / 100%) */}
-              <div
-                style={{
-                  marginTop: '2.5rem',
-                  paddingTop: '2rem',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '1.5rem',
-                  maxWidth: '32rem',
-                }}
-              >
-                <div>
-                  <p className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
-                    10K+
-                  </p>
-                  <p style={{ fontSize: '0.8rem', color: '#d6d3d1', marginTop: '0.2rem', margin: 0 }}>
-                    Discerning Patrons
-                  </p>
-                </div>
-                <div>
-                  <p className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, color: '#c8a24a', margin: 0 }}>
-                    4.9 ★
-                  </p>
-                  <p style={{ fontSize: '0.8rem', color: '#d6d3d1', marginTop: '0.2rem', margin: 0 }}>
-                    Customer Rating
-                  </p>
-                </div>
-                <div>
-                  <p className="font-serif" style={{ fontSize: '1.75rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
-                    100%
-                  </p>
-                  <p style={{ fontSize: '0.8rem', color: '#d6d3d1', marginTop: '0.2rem', margin: 0 }}>
-                    Genuine Guarantee
-                  </p>
-                </div>
-              </div>
             </div>
 
             {/* Right: High-Quality Static Visual Showcase Frame */}
@@ -470,7 +421,7 @@ export default function HomePage() {
             <div>
               <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>Express Delivery</h4>
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#78716c', lineHeight: 1.4 }}>
-                Fast &amp; secure shipping across all 64 districts
+                Delivery options and fees shown before checkout
               </p>
             </div>
           </div>
@@ -502,9 +453,9 @@ export default function HomePage() {
               🛡️
             </span>
             <div>
-              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>100% Authentic</h4>
+              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>Product information</h4>
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#78716c', lineHeight: 1.4 }}>
-                Directly sourced premium craftsmanship
+                Review each product page for its materials and specifications
               </p>
             </div>
           </div>
@@ -538,7 +489,7 @@ export default function HomePage() {
             <div>
               <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>Cash on Delivery</h4>
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#78716c', lineHeight: 1.4 }}>
-                Inspect package before paying at doorstep
+                Pay for your order on delivery
               </p>
             </div>
           </div>
@@ -570,9 +521,9 @@ export default function HomePage() {
               🔄
             </span>
             <div>
-              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>7-Day Easy Returns</h4>
+              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#1c1917' }}>Clear order summary</h4>
               <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#78716c', lineHeight: 1.4 }}>
-                Hassle-free exchanges &amp; dedicated support
+                Review delivery fees and total before confirming
               </p>
             </div>
           </div>
@@ -897,8 +848,8 @@ export default function HomePage() {
                             }}
                           >
                             <span style={{ color: '#c8a24a' }}>★</span>
-                            <span style={{ fontWeight: 600, color: '#1c1917' }}>{p.rating !== null && p.rating !== undefined ? p.rating.toFixed(1) : ''}</span>
-                            <span style={{ color: '#a8a29e' }}>({formatPrice(p.reviews, '0')} reviews)</span>
+                            <span style={{ fontWeight: 600, color: '#1c1917' }}>{Number(p.reviews) > 0 && Number.isFinite(Number(p.rating)) ? Number(p.rating).toFixed(1) : 'New'}</span>
+                            <span style={{ color: '#a8a29e' }}>{Number(p.reviews) > 0 ? `(${formatPrice(p.reviews, '0')} reviews)` : 'No reviews yet'}</span>
                           </div>
 
                           {/* Price & Action */}
@@ -1073,7 +1024,7 @@ export default function HomePage() {
                   Geneva Horology
                 </h3>
                 <p style={{ color: '#a8a29e', fontSize: '0.88rem', lineHeight: 1.6, margin: '0 0 1.25rem', flex: 1 }}>
-                  Hand-finished tourbillon escapements, 316L surgical steel cases, sapphire crystal with dual anti-reflective coating, and 2-Year Atelier seals.
+                  Explore watches and accessories selected for this collection. Review each item page for its listed materials and specifications.
                 </p>
                 <div style={{ paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '0.78rem', color: '#c8a24a', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   <div>✓ 28,800 vph High-Beat Escapement</div>
@@ -1180,71 +1131,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 5. Patron Testimonials & Press Accolades */}
-        <section style={{ marginTop: '5rem', padding: '3rem 2rem', backgroundColor: '#ffffff', borderRadius: '2rem', border: '1px solid #e7e5e4', boxShadow: '0 15px 35px rgba(0,0,0,0.03)' }}>
-          <div style={{ textAlign: 'center', maxWidth: '36rem', margin: '0 auto 3rem' }}>
-            <span style={{ color: '#c8a24a', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-              ✦ Authentic Patron Accolades
-            </span>
-            <h2 className="font-serif" style={{ fontSize: '2.2rem', fontWeight: 700, color: '#1c1917', margin: '0.5rem 0' }}>
-              Voices of Distinction
-            </h2>
-            <p style={{ color: '#78716c', fontSize: '0.95rem', margin: 0, lineHeight: 1.6 }}>
-              Read verified impressions from our patrons across Dhaka, Chittagong, and Sylhet.
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.75rem' }}>
-            <div style={{ padding: '1.75rem', backgroundColor: '#faf7f2', borderRadius: '1.5rem', border: '1px solid #e7e5e4', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ color: '#c8a24a', fontSize: '1.1rem', marginBottom: '0.75rem' }}>★★★★★</div>
-              <p style={{ color: '#292524', fontSize: '0.95rem', lineHeight: 1.7, fontStyle: 'italic', margin: 0, flex: 1 }}>
-                &ldquo;The Geneva Tourbillon arrived in a bespoke velvet-lined wooden presentation box within 24 hours in Gulshan. The mechanical sweep and 18K finish rival Swiss horology.&rdquo;
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e7e5e4' }}>
-                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '9999px', backgroundColor: '#0f3d2e', color: '#c8a24a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.95rem' }}>
-                  TR
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1c1917' }}>Tahmid Al-Rashid</div>
-                  <div style={{ fontSize: '0.75rem', color: '#78716c' }}>Gulshan 2, Dhaka · Verified Patron</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ padding: '1.75rem', backgroundColor: '#faf7f2', borderRadius: '1.5rem', border: '1px solid #e7e5e4', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ color: '#c8a24a', fontSize: '1.1rem', marginBottom: '0.75rem' }}>★★★★★</div>
-              <p style={{ color: '#292524', fontSize: '0.95rem', lineHeight: 1.7, fontStyle: 'italic', margin: 0, flex: 1 }}>
-                &ldquo;The Aura Pro Studio Wireless Headphones deliver acoustic clarity and active noise cancellation on par with leading studio monitors. Paying via Cash on Delivery made the process effortless.&rdquo;
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e7e5e4' }}>
-                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '9999px', backgroundColor: '#0f3d2e', color: '#c8a24a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.95rem' }}>
-                  NJ
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1c1917' }}>Nusrat Jahan</div>
-                  <div style={{ fontSize: '0.75rem', color: '#78716c' }}>Banani, Dhaka · Studio Sound Producer</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ padding: '1.75rem', backgroundColor: '#faf7f2', borderRadius: '1.5rem', border: '1px solid #e7e5e4', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ color: '#c8a24a', fontSize: '1.1rem', marginBottom: '0.75rem' }}>★★★★★</div>
-              <p style={{ color: '#292524', fontSize: '0.95rem', lineHeight: 1.7, fontStyle: 'italic', margin: 0, flex: 1 }}>
-                &ldquo;Exceptional white-glove packaging. Being able to inspect the package at my doorstep before finalizing payment gave me absolute peace of mind. Truly the highest standard in Bangladesh.&rdquo;
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e7e5e4' }}>
-                <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '9999px', backgroundColor: '#0f3d2e', color: '#c8a24a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.95rem' }}>
-                  FZ
-                </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1c1917' }}>Farhan Zahed</div>
-                  <div style={{ fontSize: '0.75rem', color: '#78716c' }}>Dhanmondi, Dhaka · Verified Patron</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* 6. Atelier FAQ Accordion */}
         <section style={{ marginTop: '5rem', padding: '3rem 2rem', backgroundColor: '#ffffff', borderRadius: '2rem', border: '1px solid #e7e5e4' }}>
           <div style={{ textAlign: 'center', maxWidth: '36rem', margin: '0 auto 3rem' }}>
@@ -1255,27 +1141,27 @@ export default function HomePage() {
               Frequently Asked Questions
             </h2>
             <p style={{ color: '#78716c', fontSize: '0.95rem', margin: 0 }}>
-              Everything you need to know about purchasing, authentications, and delivery.
+              Answers about ordering, payment, and delivery.
             </p>
           </div>
 
           <div style={{ maxWidth: '44rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {[
               {
-                q: 'How does Doorstep Cash on Delivery (COD) & inspection work?',
-                a: 'Our white-glove express courier delivers directly to your address across all 64 districts in Bangladesh. You are welcomed to inspect the external parcel seal and verify physical condition at your doorstep before completing payment.',
+                q: 'Can I pay when my order arrives?',
+                a: 'Cash on Delivery is available for eligible orders. The final delivery fee is shown in your order summary before you confirm.',
               },
               {
-                q: 'Are all chronometers, acoustics, and luxury curations certified authentic?',
-                a: 'Yes, 100%. Every item is directly sourced, batch-inspected by master technicians, and accompanied by our Atelier Certificate of Authenticity and a comprehensive 2-Year Limited Warranty.',
+                q: 'Where can I find product and warranty information?',
+                a: 'Please review the details listed on each product page. Warranty coverage, when available, should be confirmed with the seller before purchase.',
               },
               {
                 q: 'What are the delivery schedules across Dhaka and nationwide?',
-                a: 'Inside Dhaka Metropolitan, orders are dispatched with priority and arrive within 24 to 48 hours. Nationwide deliveries to all 64 districts typically arrive within 48 to 72 hours with end-to-end SMS tracking.',
+                a: 'Delivery timing depends on the destination and courier. Use the order tracking page for the latest status after placing an order.',
               },
               {
                 q: 'What is the 7-day Atelier exchange policy?',
-                a: 'Should you wish to exchange an item for a different colorway, size, or model, we provide a hassle-free 7-day exchange privilege. Simply contact our concierge helpline or message our WhatsApp team.',
+                a: 'Please contact the store before ordering if you have a question about exchanges or returns. The applicable policy should be confirmed with the seller.',
               },
             ].map((faq, idx) => {
               const isOpen = openFaq === idx;
@@ -1321,177 +1207,6 @@ export default function HomePage() {
                 </div>
               );
             })}
-          </div>
-        </section>
-
-        {/* 7. VIP Atelier Club Newsletter Privilege */}
-        <section
-          style={{
-            marginTop: '5rem',
-            borderRadius: '2.5rem',
-            background: 'linear-gradient(135deg, #0c3125 0%, #0f3d2e 60%, #08231a 100%)',
-            padding: '3.5rem 2.5rem',
-            color: '#ffffff',
-            border: '1px solid rgba(200, 162, 74, 0.35)',
-            boxShadow: '0 25px 60px -15px rgba(12, 49, 37, 0.45)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 10,
-              maxWidth: '38rem',
-              margin: '0 auto',
-              textAlign: 'center',
-            }}
-          >
-            <span
-              style={{
-                display: 'inline-block',
-                borderRadius: '9999px',
-                border: '1px solid rgba(200, 162, 74, 0.4)',
-                backgroundColor: 'rgba(200, 162, 74, 0.12)',
-                padding: '0.35rem 1rem',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                color: '#c8a24a',
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                marginBottom: '1rem',
-              }}
-            >
-              ✦ Atelier Private Circle
-            </span>
-            <h2 className="font-serif" style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)', fontWeight: 700, margin: '0 0 1rem', color: '#ffffff' }}>
-              Join the Atelier Circle
-            </h2>
-            <p style={{ color: '#e7e5e4', fontSize: '1rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-              Receive an exclusive <strong style={{ color: '#c8a24a' }}>20% Welcome Privilege</strong> with code <code style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.5rem', borderRadius: '0.4rem', border: '1px solid #c8a24a', color: '#c8a24a' }}>VIP20</code>, early previews of limited-run horology, and private trunk show access.
-            </p>
-
-            {/* Interactive Quick Copy Coupon Pill */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.6rem',
-                  backgroundColor: 'rgba(0, 0, 0, 0.35)',
-                  border: '1px solid rgba(200, 162, 74, 0.45)',
-                  borderRadius: '9999px',
-                  padding: '0.35rem 0.85rem',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                <span style={{ fontSize: '0.85rem', color: '#e7e5e4' }}>
-                  Privilege Code: <strong style={{ color: '#c8a24a', letterSpacing: '0.05em' }}>VIP20</strong> (-20%)
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleCopyCoupon('VIP20')}
-                  style={{
-                    backgroundColor: copiedCoupon ? '#16a34a' : '#c8a24a',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '9999px',
-                    padding: '0.25rem 0.75rem',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  {copiedCoupon ? '✓ Copied' : 'Copy'}
-                </button>
-              </div>
-
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.6rem',
-                  backgroundColor: 'rgba(0, 0, 0, 0.35)',
-                  border: '1px solid rgba(200, 162, 74, 0.45)',
-                  borderRadius: '9999px',
-                  padding: '0.35rem 0.85rem',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                <span style={{ fontSize: '0.85rem', color: '#e7e5e4' }}>
-                  Welcome: <strong style={{ color: '#c8a24a', letterSpacing: '0.05em' }}>LUXURY10</strong> (-10%)
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleCopyCoupon('LUXURY10')}
-                  style={{
-                    backgroundColor: '#0f3d2e',
-                    border: '1px solid #c8a24a',
-                    color: '#c8a24a',
-                    borderRadius: '9999px',
-                    padding: '0.25rem 0.75rem',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-
-            {vipJoined ? (
-              <div style={{ backgroundColor: 'rgba(200, 162, 74, 0.15)', border: '1px solid #c8a24a', padding: '1.25rem 1.5rem', borderRadius: '1.25rem', color: '#ffffff', fontSize: '0.95rem' }}>
-                🎉 <strong>Welcome to the Atelier Circle!</strong> Your exclusive 20% privilege code is active: <strong style={{ color: '#c8a24a' }}>VIP20</strong>. Apply at checkout for immediate discount.
-              </div>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (vipEmail.trim()) setVipJoined(true);
-                }}
-                style={{
-                  display: 'flex',
-                  gap: '0.75rem',
-                  maxWidth: '30rem',
-                  margin: '0 auto',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email or phone"
-                  value={vipEmail}
-                  onChange={(e) => setVipEmail(e.target.value)}
-                  style={{
-                    flex: '1 1 200px',
-                    padding: '0.85rem 1.25rem',
-                    borderRadius: '9999px',
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    color: '#ffffff',
-                    fontSize: '0.95rem',
-                    outline: 'none',
-                    backdropFilter: 'blur(8px)',
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="btn btn-gold"
-                  style={{
-                    padding: '0.85rem 1.75rem',
-                    fontSize: '0.95rem',
-                    boxShadow: '0 8px 20px rgba(200, 162, 74, 0.35)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Claim Privilege →
-                </button>
-              </form>
-            )}
           </div>
         </section>
 
@@ -1614,8 +1329,8 @@ export default function HomePage() {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem', marginBottom: '1rem' }}>
                     <span style={{ color: '#c8a24a' }}>★</span>
-                    <span style={{ fontWeight: 700, color: '#1c1917' }}>{quickViewProduct.rating !== null && quickViewProduct.rating !== undefined ? quickViewProduct.rating.toFixed(1) : ''}</span>
-                    <span style={{ color: '#78716c' }}>({formatPrice(quickViewProduct.reviews, '0')} authenticated reviews)</span>
+                    <span style={{ fontWeight: 700, color: '#1c1917' }}>{Number(quickViewProduct.reviews) > 0 && Number.isFinite(Number(quickViewProduct.rating)) ? Number(quickViewProduct.rating).toFixed(1) : 'New'}</span>
+                    <span style={{ color: '#78716c' }}>{Number(quickViewProduct.reviews) > 0 ? `(${formatPrice(quickViewProduct.reviews, '0')} customer reviews)` : 'No reviews yet'}</span>
                   </div>
 
                   {(() => {
@@ -1640,10 +1355,10 @@ export default function HomePage() {
 
                   {/* Highlights */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem', color: '#0f3d2e', marginBottom: '1.5rem', backgroundColor: '#faf7f2', padding: '0.75rem 1rem', borderRadius: '0.75rem' }}>
-                    <div>✓ 2-Year Atelier Warranty</div>
-                    <div>✓ Authenticity Card Included</div>
-                    <div>✓ 24-48h Doorstep Delivery</div>
-                    <div>✓ Inspect Before Paying (COD)</div>
+                    <div>Product details available</div>
+                    <div>Guest checkout available</div>
+                    <div>Order tracking available</div>
+                    <div>Cash on Delivery available</div>
                   </div>
 
                   {/* Quantity and Actions */}

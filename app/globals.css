@@ -39,6 +39,35 @@ body {
   color: #ffffff;
 }
 
+/* Storewide finishing details */
+a, button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(200, 162, 74, 0.78);
+  outline-offset: 3px;
+}
+button:disabled { cursor: not-allowed; opacity: 0.58; }
+.site-footer {
+  margin-top: 5rem; padding: clamp(2.75rem, 6vw, 5rem) 1.25rem 1.5rem;
+  color: #f8f6f0; background: radial-gradient(ellipse at 15% 0%, rgba(200,162,74,.14), transparent 42%), #0b241c;
+  border-top: 1px solid rgba(200,162,74,.42);
+}
+.site-footer__inner { width: min(100%, 80rem); margin: 0 auto; }
+.site-footer__grid { display: grid; grid-template-columns: 1.35fr .75fr 1fr; gap: clamp(2rem, 5vw, 5rem); padding-bottom: 2.5rem; }
+.site-footer__brand { color: #f8f6f0; font: 600 1.55rem var(--font-serif); text-decoration: none; }
+.site-footer__intro, .site-footer__copy { max-width: 34rem; color: #c6cec8; font-size: .9rem; line-height: 1.8; }
+.site-footer__heading { margin: .15rem 0 1rem; color: #d7bd78; font-size: .76rem; letter-spacing: .14em; text-transform: uppercase; }
+.site-footer__links { display: grid; gap: .8rem; padding: 0; margin: 0; list-style: none; color: #e7e8e2; font-size: .9rem; }
+.site-footer__links a:hover, .site-footer__bottom a:hover { color: #e5c158 !important; }
+.site-footer__bottom { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-top: 1.35rem; border-top: 1px solid rgba(255,255,255,.12); color: #adb8b0; font-size: .78rem; }
+@media (max-width: 700px) {
+  .site-footer__grid { grid-template-columns: 1fr 1fr; }
+  .site-footer__grid > :first-child { grid-column: 1 / -1; }
+  .site-footer__bottom { align-items: flex-start; flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
 /* Typography Helpers */
 .font-serif {
   font-family: var(--font-serif);

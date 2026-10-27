@@ -45,11 +45,11 @@ export default function Navbar({ onSearch }) {
           lineHeight: 1.4,
         }}
       >
-        <span>✦ Complimentary White-Glove Delivery on orders above ৳3,000</span>
+        <span>Cash on Delivery available</span>
         <span style={{ color: '#c8a24a' }}>·</span>
-        <span className="mobile-hide">Cash on Delivery across 64 districts</span>
+        <span className="mobile-hide">Delivery fees shown before order confirmation</span>
         <span style={{ color: '#c8a24a' }} className="mobile-hide">·</span>
-        <span style={{ color: '#c8a24a', fontWeight: 600 }}>Privilege Code: LUXURY10</span>
+        <span style={{ color: '#c8a24a', fontWeight: 600 }}>Track your order online</span>
       </div>
 
       {/* 2. Main Sticky Header */}
@@ -255,6 +255,7 @@ export default function Navbar({ onSearch }) {
             >
               Track Order
             </Link>
+            <Link href="/account" style={{ textDecoration: 'none', color: '#1c1917', fontSize: '0.88rem', fontWeight: 600 }}>My Account</Link>
           </nav>
 
           {/* Search Form (Desktop Centered) */}
@@ -860,6 +861,24 @@ export default function Navbar({ onSearch }) {
               </Link>
 
               <Link
+                href="/account"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.85rem 1.25rem',
+                  color: '#1c1917',
+                  textDecoration: 'none',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ color: '#0f3d2e', fontSize: '0.9rem' }}>👤</span>
+                <span>My Account</span>
+              </Link>
+
+              <Link
                 href="/admin"
                 onClick={() => setIsMobileMenuOpen(false)}
                 style={{
@@ -877,59 +896,7 @@ export default function Navbar({ onSearch }) {
                 <span>Management Atelier</span>
               </Link>
 
-              {/* Privilege Code Banner in Drawer */}
-              <div style={{ margin: '1rem 1.25rem', padding: '0.85rem 1rem', borderRadius: '0.85rem', background: 'linear-gradient(135deg, #0f3d2e 0%, #072118 100%)', color: '#ffffff', border: '1px solid rgba(200, 162, 74, 0.35)' }}>
-                <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#c8a24a', fontWeight: 700 }}>
-                  VIP Privilege Voucher
-                </div>
-                <div style={{ fontSize: '1rem', fontWeight: 800, marginTop: '0.2rem', letterSpacing: '0.05em', color: '#ffffff' }}>
-                  LUXURY10
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#d6d3d1', marginTop: '0.2rem' }}>
-                  Enjoy 10% privilege savings at checkout on all haute collections.
-                </div>
-              </div>
 
-              {/* Concierge Support Section */}
-              <div style={{ padding: '0.5rem 1.25rem', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', color: '#78716c', textTransform: 'uppercase' }}>
-                Private Concierge
-              </div>
-
-              <a
-                href="https://wa.me/8801700000000"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.75rem 1.25rem',
-                  color: '#16a34a',
-                  textDecoration: 'none',
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                }}
-              >
-                <span style={{ fontSize: '1.1rem' }}>💬</span>
-                <span>WhatsApp Private Client</span>
-              </a>
-
-              <a
-                href="tel:+8801800589879"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.75rem 1.25rem',
-                  color: '#44403c',
-                  textDecoration: 'none',
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                }}
-              >
-                <span style={{ fontSize: '1.1rem' }}>📞</span>
-                <span>+880 1800-LUXURY (Toll-Free)</span>
-              </a>
             </nav>
 
             {/* Bottom Actions */}

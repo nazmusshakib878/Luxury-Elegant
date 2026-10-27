@@ -1,5 +1,3 @@
-const { NOTIFY_WEBHOOK } = require('../config/env');
-
 const sseClients = new Set();
 
 function addEventClient(res) {
@@ -26,18 +24,6 @@ function notifyNewOrder(order) {
     }
   }
 
-  console.log(`[NEW ORDER] #${order.id} | ${order.name} | ${order.phone} | ৳${order.total}`);
-
-  // Optional external webhook (Zapier, Make, SMS Gateway)
-  if (NOTIFY_WEBHOOK) {
-    fetch(NOTIFY_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(order),
-    }).catch((err) => {
-      console.warn('Webhook notification error:', err.message);
-    });
-  }
 }
 
 module.exports = {

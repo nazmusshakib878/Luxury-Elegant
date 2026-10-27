@@ -57,6 +57,7 @@ test('showcase fallback serves catalog data and refuses customer records and wri
     FROM products p LEFT JOIN categories c ON c.id = p.cat_id WHERE p.active = 1
   `);
   assert.equal(storefrontQuery.length, 16);
+  assert.deepEqual(await db.all('SELECT id, product_id, size, color, sku, price, stock, active FROM product_variants WHERE product_id = ?', [storefrontQuery[0].id]), []);
   await assert.rejects(db.get("SELECT * FROM users WHERE role = 'admin' LIMIT 1"), /Persistent database required/);
   await assert.rejects(db.run('INSERT INTO orders (name) VALUES (?)', ['Customer']), /persistent PostgreSQL/);
 });

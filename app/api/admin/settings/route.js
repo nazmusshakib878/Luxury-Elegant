@@ -26,7 +26,20 @@ export async function PUT(request) {
         { status: 503 }
       );
     }
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'A valid settings object is required.' }, { status: 400 });
+    }
+
+    const allowedKeys = new Set(Object.keys(DEFAULT_SETTINGS));
+    const numericSettings = new Set(['free_ship', 'ship_dhaka', 'ship_outside', 'courier_charge_steadfast', 'courier_charge_pathao']);
+    for (const [key, value] of Object.entries(body)) {
+      if (!allowedKeys.has(key)) return NextResponse.json({ error: `Setting "${key}" cannot be changed.` }, { status: 400 });
+      if (numericSettings.has(key) && (!Number.isFinite(Number(value)) || Number(value) < 0)) {
+        return NextResponse.json({ error: `${key} must be a non-negative number.` }, { status: 400 });
+      }
+      if (typeof value === 'string' && value.length > 2000) return NextResponse.json({ error: `${key} is too long.` }, { status: 400 });
+    }
 
     for (const [key, val] of Object.entries(body)) {
       if (val !== undefined && val !== null) {

@@ -24,21 +24,21 @@ export async function POST(request) {
         { status: 503 }
       );
     }
-    const body = await request.json();
-    const { code, percent } = body;
-
-    if (!code || !percent) {
-      return NextResponse.json({ error: 'Code and percent are required' }, { status: 400 });
+    const body = await request.json().catch(() => null);
+    const code = typeof body?.code === 'string' ? body.code.toUpperCase().trim() : '';
+    const percent = Number(body?.percent);
+    if (!/^[A-Z0-9_-]{3,32}$/.test(code) || !Number.isInteger(percent) || percent < 1 || percent > 100) {
+      return NextResponse.json({ error: 'Use a 3–32 character coupon code and a whole-number discount from 1 to 100.' }, { status: 400 });
     }
 
-    const cleanCode = String(code).toUpperCase().trim();
+    const cleanCode = code;
     await db.run(
       `INSERT INTO coupons (code, percent, active) VALUES (?, ?, 1)
        ON CONFLICT (code) DO UPDATE SET percent = EXCLUDED.percent, active = 1`,
-      [cleanCode, +percent]
+      [cleanCode, percent]
     );
 
-    return NextResponse.json({ success: true, code: cleanCode, percent: +percent });
+    return NextResponse.json({ success: true, code: cleanCode, percent });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

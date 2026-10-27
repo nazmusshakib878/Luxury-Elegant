@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { sameCartLine } from '../src/utils/cart-identity.mjs';
 
 const require = createRequire(import.meta.url);
 const { hashOrderRequest } = require('../src/utils/order-idempotency.js');
@@ -19,6 +20,14 @@ test('variant selections remain distinct in duplicate checkout fingerprints', ()
 test('legacy cart lines without a variant keep the same fingerprint shape', () => {
   const input = { name: 'A', phone: '01712345678', address: 'Road', items: [{ id: 9, qty: 1 }] };
   assert.equal(hashOrderRequest(input), hashOrderRequest({ ...input, items: [{ id: 9, qty: 1, variant_id: null }] }));
+});
+
+test('cart identity isolates product variants and keeps legacy product lines compatible', () => {
+  assert.equal(sameCartLine({ id: 7, variant_id: 12 }, 7, 12), true);
+  assert.equal(sameCartLine({ id: 7, variant: { id: 13 } }, 7, 13), true);
+  assert.equal(sameCartLine({ id: 7, variant_id: 12 }, 7, 13), false);
+  assert.equal(sameCartLine({ id: 7 }, 7, null), true);
+  assert.equal(sameCartLine({ id: 8 }, 7, null), false);
 });
 
 test('variant reservations are atomic under concurrent checkout and restoration applies once', async () => {

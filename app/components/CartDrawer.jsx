@@ -33,6 +33,10 @@ export default function CartDrawer() {
   const [errorMsg, setErrorMsg] = useState('');
   const [deliverySettings, setDeliverySettings] = useState({ free_ship: 3000, ship_dhaka: 60, ship_outside: 120 });
   const orderRequestKey = useRef(null);
+  const guestAccessToken = useRef(null);
+  const [customerSession, setCustomerSession] = useState(null);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -44,6 +48,19 @@ export default function CartDrawer() {
         setDeliverySettings({ free_ship: safe(settings.free_ship, 3000), ship_dhaka: safe(settings.ship_dhaka, 60), ship_outside: safe(settings.ship_outside, 120) });
       })
       .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/me').then((r) => r.ok ? r.json() : null).then(async (data) => {
+      if (!active || !data?.user) return;
+      setCustomerSession(data.user);
+      setName(data.user.name || ''); setPhone(data.user.phone || '');
+      const response = await fetch('/api/account/addresses');
+      const saved = response.ok ? await response.json() : [];
+      if (active && Array.isArray(saved)) { setSavedAddresses(saved); const first = saved.find((entry) => entry.is_default) || saved[0]; if (first) { setSelectedAddressId(String(first.id)); setName(first.recipient_name); setPhone(first.phone); setAddress(first.address); setArea(first.area); } }
+    }).catch(() => {});
     return () => { active = false; };
   }, []);
 
@@ -83,7 +100,7 @@ export default function CartDrawer() {
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !phone.trim() || !address.trim()) {
+    if (!selectedAddressId && (!name.trim() || !phone.trim() || !address.trim())) {
       setErrorMsg('Please fill in your name, phone number, and delivery address.');
       return;
     }
@@ -93,6 +110,11 @@ export default function CartDrawer() {
 
     try {
       if (!orderRequestKey.current) orderRequestKey.current = window.crypto.randomUUID();
+      if (!customerSession && !guestAccessToken.current) {
+        const bytes = new Uint8Array(32);
+        window.crypto.getRandomValues(bytes);
+        guestAccessToken.current = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+      }
       const payload = {
         name: name.trim(),
         phone: phone.trim(),
@@ -105,6 +127,8 @@ export default function CartDrawer() {
         })),
         coupon: couponAppliedCode || null,
         method,
+        ...(customerSession ? {} : { guest_access_token: guestAccessToken.current }),
+        ...(selectedAddressId ? { address_id: Number(selectedAddressId) } : {}),
       };
 
       const res = await fetch('/api/orders', {
@@ -120,7 +144,7 @@ export default function CartDrawer() {
       }
 
       orderRequestKey.current = null;
-      setPlacedOrder({ ...data, phone });
+      setPlacedOrder({ ...data, phone, guest_access_token: data.guest_access_token });
       setStep('success');
       clearCart();
       showToast(`Order #${data.order_id} confirmed successfully!`);
@@ -424,6 +448,7 @@ export default function CartDrawer() {
 
           {step === 'checkout' && (
             <form onSubmit={handlePlaceOrder} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {customerSession && savedAddresses.length > 0 && <div><label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#44403c', display: 'block', marginBottom: '0.3rem' }}>Saved delivery address</label><select className="inp" value={selectedAddressId} onChange={(e) => { const id = e.target.value; setSelectedAddressId(id); const selected = savedAddresses.find((entry) => String(entry.id) === id); if (selected) { setName(selected.recipient_name); setPhone(selected.phone); setAddress(selected.address); setArea(selected.area); } }}><option value="">Enter a new address</option>{savedAddresses.map((entry) => <option key={entry.id} value={entry.id}>{entry.label} — {entry.address}</option>)}</select><Link href="/account" style={{ color: '#0f3d2e', fontSize: '.8rem' }}>Manage saved addresses</Link></div>}
               {errorMsg && (
                 <div style={{ padding: '0.75rem', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '0.75rem', fontSize: '0.85rem' }}>
                   {errorMsg}
@@ -435,7 +460,7 @@ export default function CartDrawer() {
                   Recipient Full Name *
                 </label>
                 <input
-                  required
+                  required={!selectedAddressId}
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -449,7 +474,7 @@ export default function CartDrawer() {
                   Mobile Phone Number (for courier SMS) *
                 </label>
                 <input
-                  required
+                  required={!selectedAddressId}
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -463,7 +488,7 @@ export default function CartDrawer() {
                   Delivery Address *
                 </label>
                 <textarea
-                  required
+                  required={!selectedAddressId}
                   rows={2}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
@@ -634,7 +659,8 @@ export default function CartDrawer() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <Link
-                  href={`/invoice/${placedOrder.order_id}?phone=${encodeURIComponent(placedOrder.phone)}`}
+                  href={`/invoice/${placedOrder.order_id}` + (placedOrder.guest_access_token ? `#access_token=${encodeURIComponent(placedOrder.guest_access_token)}` : '')}
+                  referrerPolicy="no-referrer"
                   target="_blank"
                   className="btn btn-gold"
                   style={{ width: '100%' }}
@@ -642,7 +668,8 @@ export default function CartDrawer() {
                   📄 View Official Tax Invoice
                 </Link>
                 <Link
-                  href={`/track?id=${placedOrder.order_id}&phone=${encodeURIComponent(phone)}`}
+                  href={`/track?id=${placedOrder.order_id}` + (placedOrder.guest_access_token ? `#access_token=${encodeURIComponent(placedOrder.guest_access_token)}` : '')}
+                  referrerPolicy="no-referrer"
                   className="btn btn-p"
                   style={{ width: '100%' }}
                 >

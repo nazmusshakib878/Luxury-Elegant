@@ -9,7 +9,9 @@ function normalize(body) {
   if (!/^[A-Z0-9][A-Z0-9._-]{1,63}$/.test(sku)) throw new Error('SKU must be 2–64 characters using letters, numbers, dots, underscores, or hyphens.');
   if (!Number.isFinite(price) || price <= 0) throw new Error('Variant price must be greater than zero.');
   if (!Number.isSafeInteger(stock) || stock < 0) throw new Error('Variant stock must be a non-negative whole number.');
-  return { size: String(body.size || '').trim(), color: String(body.color || '').trim(), sku, price, stock, active: body.active === false || body.active === 0 ? 0 : 1 };
+  const active = body.active === undefined ? 1 : ([false, 0, '0', 'false'].includes(body.active) ? 0 : ([true, 1, '1', 'true'].includes(body.active) ? 1 : null));
+  if (active === null) throw new Error('Variant availability must be active or inactive.');
+  return { size: String(body.size || '').trim().slice(0, 64), color: String(body.color || '').trim().slice(0, 64), sku, price, stock, active };
 }
 
 export async function GET(request, { params }) {
@@ -19,7 +21,11 @@ export async function GET(request, { params }) {
 }
 
 export async function POST(request, { params }) { return save(request, params, null); }
-export async function PUT(request, { params }) { return save(request, params, new URL(request.url).searchParams.get('variantId')); }
+export async function PUT(request, { params }) {
+  const variantId = new URL(request.url).searchParams.get('variantId');
+  if (!variantId || !/^\d+$/.test(variantId)) return NextResponse.json({ error: 'A valid variant ID is required.' }, { status: 400 });
+  return save(request, params, variantId);
+}
 
 async function save(request, paramsPromise, variantId) {
   if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
@@ -30,14 +36,17 @@ async function save(request, paramsPromise, variantId) {
     const p = normalize(await request.json());
     const product = await db.get('SELECT id FROM products WHERE id = ?', [id]);
     if (!product) return NextResponse.json({ error: 'Product not found.' }, { status: 404 });
-    if (variantId) await db.run('UPDATE product_variants SET size = ?, color = ?, sku = ?, price = ?, stock = ?, active = ? WHERE id = ? AND product_id = ?', [p.size, p.color, p.sku, p.price, p.stock, p.active, variantId, id]);
+    if (variantId) {
+      const result = await db.run('UPDATE product_variants SET size = ?, color = ?, sku = ?, price = ?, stock = ?, active = ? WHERE id = ? AND product_id = ?', [p.size, p.color, p.sku, p.price, p.stock, p.active, variantId, id]);
+      if (result.changes !== 1) return NextResponse.json({ error: 'Variant not found.' }, { status: 404 });
+    }
     else { const result = await db.run('INSERT INTO product_variants (product_id, size, color, sku, price, stock, active) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, p.size, p.color, p.sku, p.price, p.stock, p.active]); return NextResponse.json({ success: true, id: result.lastInsertRowid }); }
     return NextResponse.json({ success: true });
-  } catch (err) { const duplicate = err.code === '23505' || /unique constraint|duplicate key/i.test(err.message || ''); return NextResponse.json({ error: duplicate ? 'That SKU is already assigned.' : err.message }, { status: duplicate ? 409 : 400 }); }
+  } catch (err) { const duplicate = err.code === '23505' || /unique constraint|duplicate key|sku already assigned globally/i.test(err.message || ''); return NextResponse.json({ error: duplicate ? 'That SKU is already assigned.' : err.message }, { status: duplicate ? 409 : 400 }); }
 }
 
 export async function DELETE(request, { params }) {
   if (!isAdminRequest(request)) return NextResponse.json({ error: 'Admin authentication required' }, { status: 401 });
-  try { await initSchema(); if (db.isFallback) return NextResponse.json({ error: 'Inventory updates require a persistent database.' }, { status: 503 }); const { id } = await params; const variantId = new URL(request.url).searchParams.get('variantId'); await db.run('DELETE FROM product_variants WHERE id = ? AND product_id = ?', [variantId, id]); return NextResponse.json({ success: true }); }
+  try { await initSchema(); if (db.isFallback) return NextResponse.json({ error: 'Inventory updates require a persistent database.' }, { status: 503 }); const { id } = await params; const variantId = new URL(request.url).searchParams.get('variantId'); if (!variantId || !/^\d+$/.test(variantId)) return NextResponse.json({ error: 'A valid variant ID is required.' }, { status: 400 }); await db.run('DELETE FROM product_variants WHERE id = ? AND product_id = ?', [variantId, id]); return NextResponse.json({ success: true }); }
   catch (err) { return NextResponse.json({ error: err.message }, { status: 500 }); }
 }

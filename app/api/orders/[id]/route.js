@@ -3,21 +3,24 @@ const { isAdminRequest } = require('../../../../src/utils/route-auth');
 const db = require('../../../../src/database/connection');
 const { initSchema } = require('../../../../src/database/schema');
 const { restoreOrderLine } = require('../../../../src/services/inventory');
+const crypto = require('crypto');
+const { getCustomerSessionUser } = require('../../../../src/utils/customer-session');
+const { enqueueOrderEvent } = require('../../../../src/services/notification-outbox');
 
 export async function GET(request, { params }) {
   try {
     await initSchema();
     const { id } = await params;
     const { searchParams } = new URL(request.url);
-    const phone = searchParams.get('phone');
+    const accessToken = request.headers.get('x-guest-order-token') || '';
     const order = await db.get('SELECT * FROM orders WHERE id = ?', [id]);
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
-    // Guard against information disclosure: the requester must own this order
-    if (!phone || String(order.phone) !== String(phone)) {
-      return NextResponse.json({ error: 'This invoice is not available for the provided details' }, { status: 404 });
-    }
+    const user = await getCustomerSessionUser(request, db);
+    const owns = user && Number(order.user_id) === Number(user.id);
+    const tokenMatches = accessToken && order.guest_access_token_hash && order.guest_access_token_expires && new Date(order.guest_access_token_expires).getTime() > Date.now() && crypto.createHash('sha256').update(accessToken).digest('hex') === order.guest_access_token_hash;
+    if (!owns && !tokenMatches && !isAdminRequest(request)) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
     return NextResponse.json({
       ...order,
       items: typeof order.items === 'string' ? JSON.parse(order.items || '[]') : order.items,
@@ -65,7 +68,7 @@ export async function PUT(request, { params }) {
           const qty = Number(item.qty);
           const productId = Number(item.id);
           if (!Number.isSafeInteger(qty) || qty <= 0 || !Number.isSafeInteger(productId) || productId <= 0) throw new Error('Order item data is invalid; inventory was not changed.');
-          const lineKey = String(item.variant_id || ('product:' + productId + ':' + index));
+          const lineKey = item.variant_id ? ('variant:' + item.variant_id + ':' + index) : ('product:' + productId + ':' + index);
           await restoreOrderLine(tx, { orderId: id, lineKey, variantId: item.variant_id, productId, quantity: qty });
         }
       }
@@ -73,6 +76,10 @@ export async function PUT(request, { params }) {
         'UPDATE orders SET status = ?, payment_status = ? WHERE id = ?',
         [nextStatus, payment_status || order.payment_status, id]
       );
+      if (nextStatus !== order.status && ['shipped', 'delivered', 'cancelled'].includes(nextStatus)) {
+        const recipient = order.user_id ? await tx.get('SELECT email FROM users WHERE id = ?', [order.user_id]) : null;
+        await enqueueOrderEvent(tx, { order: { ...order, id, status: nextStatus }, eventType: `order_${nextStatus}`, customerEmail: recipient?.email || null, customerPhone: order.phone || null });
+      }
     });
 
     return NextResponse.json({ success: true });

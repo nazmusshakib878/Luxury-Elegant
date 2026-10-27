@@ -35,6 +35,7 @@ function generateToken(user) {
     id: user.id,
     role: user.role,
     name: user.name,
+    ...(Number.isInteger(Number(user.sessionVersion)) ? { sv: Number(user.sessionVersion) } : {}),
     exp: Date.now() + 6048e5,
   };
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');

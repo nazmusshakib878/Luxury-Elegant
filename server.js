@@ -9,6 +9,8 @@ const store = require('./src/controllers/store.controller');
 const invoice = require('./src/controllers/invoice.controller');
 const apiRoutes = require('./src/routes/api.routes');
 const adminRoutes = require('./src/routes/admin.routes');
+const { LEGACY_COMMERCE_API_ENABLED } = require('./src/config/env');
+const { isLegacyCommerceRouteBlocked } = require('./src/utils/legacy-route-guard');
 
 // 1. Initialize Database Schema & Seeds (async safe)
 initSchema().catch((err) => {
@@ -86,11 +88,19 @@ app.get('/api/health', async (req, res) => {
 app.use(authenticateUser);
 
 // 5. API Endpoints
-app.use('/api', apiRoutes);
+// The Express commerce API is a legacy parallel path. Keep read-only catalog
+// endpoints available, but block its order and payment flows unless explicitly
+// enabled for isolated local migration work.
+app.use('/api', (req, res, next) => {
+  if (isLegacyCommerceRouteBlocked(req.method, req.path, LEGACY_COMMERCE_API_ENABLED)) {
+    return res.status(410).json({ error: 'This legacy commerce endpoint is disabled. Use the Next.js storefront.' });
+  }
+  next();
+}, apiRoutes);
 app.use('/api/admin', adminRoutes);
 
 // 6. Payment Gateway Callbacks (SSLCOMMERZ & aamarPay)
-app.all('/pay/:gw/:res', asyncHandler(store.handlePaymentCallback));
+app.all('/pay/:gw/:res', (req, res) => res.status(410).send('Legacy payment callbacks are disabled.'));
 
 // 7. Printable Order Invoice
 app.get('/invoice/:id', asyncHandler(invoice.renderInvoice));

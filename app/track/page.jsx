@@ -14,7 +14,7 @@ const STEPS = [
 
 export default function OrderTrackingPage() {
   const [orderId, setOrderId] = useState('');
-  const [phone, setPhone] = useState('');
+  const [accessToken, setAccessToken] = useState('');
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -24,20 +24,20 @@ export default function OrderTrackingPage() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = urlParams.get('id');
-      const urlPhone = urlParams.get('phone');
+      const urlToken = new URLSearchParams(window.location.hash.slice(1)).get('access_token');
       if (urlId) setOrderId(urlId);
-      if (urlPhone) setPhone(urlPhone);
-      if (urlId && urlPhone) {
-        fetchOrder(urlId, urlPhone);
+      if (urlToken) setAccessToken(urlToken);
+      if (urlId) {
+        fetchOrder(urlId, urlToken);
       }
     }
   }, []);
 
-  const fetchOrder = async (idToUse, phoneToUse) => {
+  const fetchOrder = async (idToUse, tokenToUse) => {
     setLoading(true);
     setErrorMsg('');
     try {
-      const res = await fetch(`/api/track?id=${idToUse}&phone=${encodeURIComponent(phoneToUse)}`);
+      const res = await fetch(`/api/track?id=${encodeURIComponent(idToUse)}`, { headers: tokenToUse ? { 'X-Guest-Order-Token': tokenToUse } : {} });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Order not found');
@@ -53,11 +53,11 @@ export default function OrderTrackingPage() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (!orderId.trim() || !phone.trim()) {
-      setErrorMsg('Please enter both Order ID and Phone Number.');
+    if (!orderId.trim()) {
+      setErrorMsg('Please enter your Order ID.');
       return;
     }
-    fetchOrder(orderId.trim(), phone.trim());
+    fetchOrder(orderId.trim(), accessToken.trim());
   };
 
   const currentStepIndex = order
@@ -120,14 +120,13 @@ export default function OrderTrackingPage() {
 
             <div>
               <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#44403c', display: 'block', marginBottom: '0.3rem' }}>
-                Mobile Number *
+                Private Order Access Key (guest orders)
               </label>
               <input
-                required
-                type="tel"
-                placeholder="017xxxxxxxx"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                type="password"
+                placeholder="Paste the private key from your order confirmation"
+                value={accessToken}
+                onChange={(e) => setAccessToken(e.target.value)}
                 className="inp"
               />
             </div>
@@ -163,7 +162,8 @@ export default function OrderTrackingPage() {
                 </span>
               </div>
               <Link
-                href={`/invoice/${order.id}?phone=${order.phone}`}
+                href={`/invoice/${order.id}` + (accessToken ? `#access_token=${encodeURIComponent(accessToken)}` : '')}
+                referrerPolicy="no-referrer"
                 target="_blank"
                 className="btn btn-gold"
                 style={{ fontSize: '0.8rem', padding: '0.45rem 1rem' }}
@@ -311,6 +311,7 @@ export default function OrderTrackingPage() {
                 <div><strong>Address:</strong> {order.address} ({order.area === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</div>
                 <div><strong>Payment Method:</strong> <span style={{ textTransform: 'capitalize' }}>{order.method === 'cod' ? 'Cash on Delivery (Doorstep Inspection)' : order.method}</span></div>
                 <div><strong>Payment Status:</strong> <span style={{ textTransform: 'capitalize', color: order.payment_status === 'paid' ? '#0f3d2e' : '#b45309', fontWeight: 600 }}>{order.payment_status}</span></div>
+                {order.courier_provider && <div><strong>Courier:</strong> {order.courier_provider} · {String(order.shipment_status || '').replaceAll('_', ' ')}{order.tracking_id ? ` · Tracking ${order.tracking_id}` : ''}{order.consignment_id ? ` · Consignment ${order.consignment_id}` : ''}</div>}
               </div>
             </div>
 
@@ -322,17 +323,9 @@ export default function OrderTrackingPage() {
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <a
-                  href={`https://wa.me/8801700000000?text=${encodeURIComponent(`Hello Concierge, I would like to inquire about the delivery status of Order #${order.id}.`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-p"
-                  style={{ backgroundColor: '#25D366', fontSize: '0.85rem', padding: '0.5rem 1rem' }}
-                >
-                  💬 WhatsApp Concierge
-                </a>
                 <Link
-                  href={`/invoice/${order.id}?phone=${order.phone}`}
+                  href={`/invoice/${order.id}` + (accessToken ? `#access_token=${encodeURIComponent(accessToken)}` : '')}
+                  referrerPolicy="no-referrer"
                   target="_blank"
                   className="btn btn-gold"
                   style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}

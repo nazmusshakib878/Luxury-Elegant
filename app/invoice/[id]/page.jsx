@@ -13,10 +13,10 @@ export default function InvoicePage() {
   useEffect(() => {
     async function loadInvoice() {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const phone = params.get('phone');
-        const url = `/api/orders/${id}` + (phone ? '?phone=' + encodeURIComponent(phone) : '');
-        const res = await fetch(url);
+        const accessToken = new URLSearchParams(window.location.hash.slice(1)).get('access_token');
+        const adminToken = localStorage.getItem('luxury_admin_token');
+        const headers = { ...(accessToken ? { 'X-Guest-Order-Token': accessToken } : {}), ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}) };
+        const res = await fetch(`/api/orders/${id}`, { headers });
         if (res.ok) {
           const data = await res.json();
           setOrder(data);

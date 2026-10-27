@@ -10,7 +10,7 @@ export async function GET() {
     const s = Object.fromEntries(rows.map((row) => [row.k, row.v]));
     return NextResponse.json({
       shop_name: s.shop_name || DEFAULT_SETTINGS.shop_name,
-      whatsapp: s.whatsapp || DEFAULT_SETTINGS.whatsapp,
+      whatsapp: s.whatsapp || '',
       free_ship: +(s.free_ship || DEFAULT_SETTINGS.free_ship),
       ship_dhaka: +(s.ship_dhaka || DEFAULT_SETTINGS.ship_dhaka),
       ship_outside: +(s.ship_outside || DEFAULT_SETTINGS.ship_outside),

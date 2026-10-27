@@ -1,5 +1,6 @@
 const db = require('../database/connection');
 const { getStoreSettings } = require('./store.controller');
+const crypto = require('crypto');
 
 exports.renderInvoice = async (req, res) => {
   const order = await db.get('SELECT * FROM orders WHERE id = ?', [req.params.id]);
@@ -8,11 +9,13 @@ exports.renderInvoice = async (req, res) => {
     return res.status(404).send('Order not found');
   }
 
-  // Authorization: allow store staff/admin or customer with matching phone
+  // Authorization: staff, signed-in owner, or a high-entropy guest order key.
   const isStaffOrAdmin = req.user && req.user.role !== 'customer';
-  const isMatchingCustomer = req.query.phone && req.query.phone === order.phone;
+  const isMatchingCustomer = req.user && req.user.role === 'customer' && Number(req.user.id) === Number(order.user_id);
+  const token = req.get('x-guest-order-token') || '';
+  const isGuestOwner = /^[a-f0-9]{64}$/i.test(token) && order.guest_access_token_hash && order.guest_access_token_expires && new Date(order.guest_access_token_expires).getTime() > Date.now() && crypto.createHash('sha256').update(token.toLowerCase()).digest('hex') === order.guest_access_token_hash;
 
-  if (!isStaffOrAdmin && !isMatchingCustomer) {
+  if (!isStaffOrAdmin && !isMatchingCustomer && !isGuestOwner) {
     return res.status(403).send('Forbidden: You do not have permission to view this invoice');
   }
 

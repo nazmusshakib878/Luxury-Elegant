@@ -5,6 +5,7 @@ let pgPool = null;
 let sqliteDb = null;
 let sqliteQueue = Promise.resolve();
 const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const isProduction = process.env.NODE_ENV === 'production' || isVercel;
 const usePostgres = Boolean(DATABASE_URL);
 let pgUnavailable = false;
 
@@ -70,7 +71,7 @@ function getMemoryStore() {
 }
 
 function isCatalogRead(sql) {
-  return /^\s*SELECT\s+/i.test(sql) && /\bFROM\s+(products|categories|settings|coupons|reviews)\b/i.test(sql) && !/\bFROM\s+(users|orders|abandoned)\b/i.test(sql);
+  return /^\s*SELECT\s+/i.test(sql) && /\bFROM\s+(products|product_variants|categories|settings|coupons|reviews)\b/i.test(sql) && !/\bFROM\s+(users|orders|abandoned)\b/i.test(sql);
 }
 
 function switchToReadOnlyCatalog(err) {
@@ -111,7 +112,8 @@ function createTransactionAdapter(query) {
 const db = {
   get isPostgres() { return usePostgres && !pgUnavailable; },
   isVercel,
-  get isFallback() { return (!usePostgres && !sqliteDb) || pgUnavailable; },
+  get isFallback() { return (!usePostgres && !sqliteDb) || pgUnavailable || (isProduction && !usePostgres); },
+  get isProduction() { return isProduction; },
   pool: pgPool,
   sqlite: sqliteDb,
   getMemoryStore,
@@ -175,6 +177,7 @@ const db = {
   },
 
   async run(sql, params = []) {
+    if (isProduction && !usePostgres) throw new Error('PRODUCTION_WRITE_BLOCKED: configure persistent PostgreSQL before enabling production writes.');
     if (usePostgres) {
       if (pgUnavailable) throw new Error('Persistent database unavailable; all writes are disabled in read-only catalog preview mode.');
       let res;
@@ -200,6 +203,7 @@ const db = {
   },
 
   async exec(sql) {
+    if (isProduction && !usePostgres) throw new Error('PRODUCTION_WRITE_BLOCKED: schema changes require persistent PostgreSQL.');
     if (usePostgres) {
       if (pgUnavailable) throw new Error('Persistent database unavailable; schema changes are disabled in read-only catalog preview mode.');
       try { return await pgPool.query(sql); }
@@ -224,6 +228,7 @@ const db = {
 
   async transaction(callback) {
     if (typeof callback !== 'function') throw new TypeError('Transaction callback is required.');
+    if (isProduction && !usePostgres) throw new Error('PRODUCTION_WRITE_BLOCKED: transactions require persistent PostgreSQL.');
     if (pgUnavailable || this.isFallback) throw new Error('Persistent database is unavailable; transactions are disabled in read-only catalog preview mode.');
     if (usePostgres && !this.isPostgres) throw new Error('Persistent database is unavailable; transactions are disabled in read-only catalog preview mode.');
 

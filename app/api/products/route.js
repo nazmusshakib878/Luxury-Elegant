@@ -29,7 +29,8 @@ function shapeProduct(product) {
     ...product,
     price: Number.isFinite(Number(product.price)) && product.price !== null ? Number(product.price) : null,
     sale_price: product.sale_price !== null && Number.isFinite(Number(product.sale_price)) && Number.isFinite(Number(product.price)) && Number(product.sale_price) > 0 && Number(product.sale_price) < Number(product.price) ? Number(product.sale_price) : null,
-    stock: Number.isFinite(Number(product.stock)) ? Number(product.stock) : null,
+    stock: Number.isFinite(Number(product.available_stock ?? product.stock)) ? Number(product.available_stock ?? product.stock) : null,
+    has_variants: Boolean(Number(product.has_variants)),
     rating: product.rating !== null && product.rating !== undefined && Number.isFinite(Number(product.rating)) && Number(product.rating) >= 0 && Number(product.rating) <= 5 ? Number(product.rating) : null,
     reviews: Number.isFinite(Number(product.reviews)) && Number(product.reviews) >= 0 ? Number(product.reviews) : 0,
     image: imgPath,
@@ -89,9 +90,11 @@ export async function GET(request) {
     const sql = `
       SELECT 
         p.*,
+        CASE WHEN EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id) THEN (SELECT COALESCE(SUM(pv.stock), 0) FROM product_variants pv WHERE pv.product_id = p.id AND pv.active = 1) ELSE p.stock END AS available_stock,
+        CASE WHEN EXISTS (SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id) THEN 1 ELSE 0 END AS has_variants,
         c.name AS cat,
-        (SELECT ROUND(AVG(rating), 1) FROM reviews WHERE product_id = p.id) AS rating,
-        (SELECT COUNT(*) FROM reviews WHERE product_id = p.id) AS reviews
+        (SELECT ROUND(AVG(r.rating), 1) FROM reviews r INNER JOIN review_verifications v ON v.review_id = r.id WHERE r.product_id = p.id) AS rating,
+        (SELECT COUNT(*) FROM reviews r INNER JOIN review_verifications v ON v.review_id = r.id WHERE r.product_id = p.id) AS reviews
       FROM products p
       LEFT JOIN categories c ON c.id = p.cat_id
       WHERE ${where.join(' AND ')}
@@ -116,7 +119,8 @@ export async function POST(request) {
       );
     }
     const body = await request.json();
-    const { name, cat_id, price, sale_price, stock, image, description, variants } = body;
+    const { name, sku, cat_id, price, sale_price, stock, image, description, variants } = body;
+    const cleanSku = typeof sku === 'string' && sku.trim() ? sku.trim().toUpperCase() : null;
     const numericPrice = price === null || price === undefined || price === '' ? null : Number(price);
     const numericSalePrice = sale_price === null || sale_price === undefined || sale_price === '' ? null : Number(sale_price);
     const numericStock = stock === null || stock === undefined || stock === '' ? 0 : Number(stock);
@@ -129,12 +133,16 @@ export async function POST(request) {
     if (!Number.isSafeInteger(numericStock) || numericStock < 0) {
       return NextResponse.json({ error: 'Stock must be a non-negative whole number' }, { status: 400 });
     }
+    if (cleanSku && !/^[A-Z0-9][A-Z0-9._-]{1,63}$/.test(cleanSku)) {
+      return NextResponse.json({ error: 'SKU must be 2–64 characters using letters, numbers, dots, underscores, or hyphens.' }, { status: 400 });
+    }
 
     const res = await db.run(
-      `INSERT INTO products (name, cat_id, price, sale_price, stock, image, description, variants)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO products (name, sku, cat_id, price, sale_price, stock, image, description, variants)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name.trim(),
+        cleanSku,
         cat_id || null,
         numericPrice,
         numericSalePrice,
@@ -147,6 +155,7 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, id: res.lastInsertRowid });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const duplicate = err.code === '23505' || /unique constraint|duplicate key|sku already assigned globally/i.test(err.message || '');
+    return NextResponse.json({ error: duplicate ? 'That SKU is already assigned to another product.' : err.message }, { status: duplicate ? 409 : 500 });
   }
 }

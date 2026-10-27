@@ -1,10 +1,12 @@
 module.exports = {
   DEFAULT_SETTINGS: {
     shop_name: 'Luxury & Elegant',
-    whatsapp: '8801700000000',
+    whatsapp: '',
     free_ship: '3000',
     ship_dhaka: '60',
     ship_outside: '120',
+    courier_charge_steadfast: '0',
+    courier_charge_pathao: '0',
     video_ad_active: '1',
     video_ad_url: '/videos/promo.webm',
     video_ad_poster: '/images/video-poster.jpg',
