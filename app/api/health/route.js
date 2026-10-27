@@ -3,40 +3,38 @@ const db = require('../../../src/database/connection');
 const { initSchema } = require('../../../src/database/schema');
 
 export async function GET() {
-  let dbStatus = 'disconnected';
-  let userCount = 0;
+  let dbStatus = 'unavailable';
   let productCount = 0;
-  let initError = null;
+  let healthError = false;
 
   try {
     await initSchema();
-    const u = db.isFallback ? null : await db.get('SELECT COUNT(*) as c FROM users');
     const p = await db.get('SELECT COUNT(*) as c FROM products');
-    userCount = +(u?.c || u?.count || 0);
     productCount = +(p?.c || p?.count || 0);
     dbStatus = db.isPostgres
       ? 'postgresql_connected'
-      : (db.sqlite ? 'sqlite_connected' : 'disconnected (showcase_read_only_fallback)');
-  } catch (err) {
-    initError = err.message;
-    dbStatus = 'error: ' + err.message;
+      : (db.sqlite ? 'sqlite_local' : 'read_only_showcase');
+  } catch {
+    healthError = true;
+    dbStatus = 'unavailable';
   }
 
   const isPostgres = Boolean(db.isPostgres);
   const isVercel = Boolean(process.env.VERCEL);
   const isFallback = Boolean(db.isFallback);
+  const ready = !healthError && (isPostgres || !isVercel);
 
   return NextResponse.json({
     framework: 'Next.js 16 (App Router)',
-    status: isPostgres || !isVercel ? 'ok' : 'showcase_fallback',
+    status: healthError ? 'degraded' : (isPostgres || !isVercel ? 'ok' : 'showcase_fallback'),
     mode: isPostgres ? 'postgresql' : (isVercel ? 'vercel_showcase_fallback' : 'sqlite'),
     isVercel,
     database: {
-      connected: isPostgres,
-      engine: isPostgres ? 'PostgreSQL (Persistent)' : (db.sqlite ? 'SQLite (Local)' : 'None (In-Memory Showcase Preview)'),
+      connected: isPostgres && !healthError,
+      engine: isPostgres ? 'postgresql' : (db.sqlite ? 'sqlite_local' : 'read_only_showcase'),
       status: dbStatus,
-      ordersAllowed: isPostgres || (!isVercel && Boolean(db.sqlite)),
-      mutationsAllowed: isPostgres || (!isVercel && Boolean(db.sqlite)),
+      ordersAllowed: ready && (isPostgres || (!isVercel && Boolean(db.sqlite))),
+      mutationsAllowed: ready && (isPostgres || (!isVercel && Boolean(db.sqlite))),
       setupRequired: !isPostgres && isVercel
         ? 'DATABASE_URL (or POSTGRES_URL) is required in Vercel Project Settings to connect persistent PostgreSQL for orders, payments, and admin mutations.'
         : null,
@@ -44,7 +42,6 @@ export async function GET() {
     catalog: {
       mode: isPostgres ? 'persistent' : (db.sqlite ? 'local_sqlite' : 'read_only_showcase'),
       productsAvailable: productCount || 16,
-      usersCount: userCount,
       readOnlyPreview: isFallback,
     },
     security: {
