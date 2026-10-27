@@ -46,10 +46,14 @@ export default function AdminDashboardPage() {
 
   // New product form state
   const [newProdName, setNewProdName] = useState('');
+  const [newProdSku, setNewProdSku] = useState('');
   const [newProdPrice, setNewProdPrice] = useState('');
   const [newProdStock, setNewProdStock] = useState('10');
   const [newProdCat, setNewProdCat] = useState('1');
   const [newProdDesc, setNewProdDesc] = useState('');
+  const [variantProduct, setVariantProduct] = useState(null);
+  const [productVariants, setProductVariants] = useState([]);
+  const [variantDraft, setVariantDraft] = useState({ size: '', color: '', sku: '', price: '', stock: '0' });
 
   // New coupon form state
   const [newCouponCode, setNewCouponCode] = useState('');
@@ -168,6 +172,7 @@ export default function AdminDashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newProdName,
+          sku: newProdSku,
           price: +newProdPrice,
           stock: +newProdStock,
           cat_id: +newProdCat,
@@ -178,6 +183,7 @@ export default function AdminDashboardPage() {
       if (data?.success) {
         alert('Product created successfully!');
         setNewProdName('');
+        setNewProdSku('');
         setNewProdPrice('');
         setNewProdDesc('');
         loadDashboardData();
@@ -185,6 +191,35 @@ export default function AdminDashboardPage() {
     } catch (err) {
       alert('Error creating product');
     }
+  };
+
+  const openVariants = async (product) => {
+    setVariantProduct(product);
+    setProductVariants(await apiAdmin(`/api/admin/products/${product.id}/variants`));
+  };
+  const saveVariant = async (e) => {
+    e.preventDefault();
+    try {
+      await apiAdmin(`/api/admin/products/${variantProduct.id}/variants`, { method: 'POST', body: JSON.stringify(variantDraft) });
+      setVariantDraft({ size: '', color: '', sku: '', price: '', stock: '0' });
+      await openVariants(variantProduct);
+      loadDashboardData();
+    } catch (err) { alert(err.message); }
+  };
+  const deleteVariant = async (id) => {
+    try { await apiAdmin(`/api/admin/products/${variantProduct.id}/variants?variantId=${id}`, { method: 'DELETE' }); await openVariants(variantProduct); }
+    catch (err) { alert(err.message); }
+  };
+  const editVariant = async (variant) => {
+    const size = prompt('Size', variant.size || ''); if (size === null) return;
+    const color = prompt('Color', variant.color || ''); if (color === null) return;
+    const sku = prompt('SKU', variant.sku || ''); if (sku === null) return;
+    const price = prompt('Price', String(variant.price)); if (price === null) return;
+    const stock = prompt('Stock', String(variant.stock)); if (stock === null) return;
+    try {
+      await apiAdmin(`/api/admin/products/${variantProduct.id}/variants?variantId=${variant.id}`, { method: 'PUT', body: JSON.stringify({ size, color, sku, price, stock, active: Boolean(variant.active) }) });
+      await openVariants(variantProduct);
+    } catch (err) { alert(err.message); }
   };
 
   const handleCreateCoupon = async (e) => {
@@ -471,10 +506,12 @@ export default function AdminDashboardPage() {
                           }}
                         >
                           <option value="pending">Pending</option>
+                          <option value="confirmed">Confirmed</option>
                           <option value="processing">Processing</option>
                           <option value="shipped">Shipped</option>
                           <option value="delivered">Delivered</option>
                           <option value="cancelled">Cancelled</option>
+                          <option value="returned">Returned</option>
                         </select>
                       </td>
                       <td style={{ padding: '0.75rem' }}>
@@ -496,17 +533,20 @@ export default function AdminDashboardPage() {
             {/* Left: Product List */}
             <div style={{ backgroundColor: '#ffffff', borderRadius: '1.5rem', padding: '1.75rem', border: '1px solid #e7e5e4' }}>
               <h3 className="font-serif" style={{ fontSize: '1.3rem', marginBottom: '1.25rem' }}>Product Catalog ({products.length})</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '35rem', overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '35rem', overflowY: 'auto' }}>
                 {products.map((p) => (
                   <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', borderRadius: '0.75rem', backgroundColor: '#faf7f2', border: '1px solid #e7e5e4' }}>
                     <img src={p.image || '/images/default.jpg'} alt={p.name} style={{ width: '3rem', height: '3rem', objectFit: 'cover', borderRadius: '0.5rem' }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{p.name}</div>
                       <div style={{ fontSize: '0.8rem', color: '#0f3d2e', fontWeight: 700 }}>৳{formatPrice(p.price_now ?? p.price)} · Stock: {p.stock ?? 0}</div>
+                      <div style={{ fontSize: '0.74rem', color: '#78716c' }}>SKU: {p.sku || 'Not set'}</div>
                     </div>
+                    <button type="button" onClick={() => openVariants(p)} className="btn btn-gold" style={{ fontSize: '0.72rem', padding: '0.45rem 0.7rem' }}>Variants &amp; Stock</button>
                   </div>
                 ))}
               </div>
+              {stats?.low?.length > 0 && <div style={{ marginTop: '1rem', padding: '0.8rem', borderRadius: '0.75rem', background: '#fff7ed', color: '#9a3412' }}><strong>Low stock alerts</strong>{stats.low.map((p) => <div key={p.id}>{p.name}: {p.stock} left</div>)}</div>}
             </div>
 
             {/* Right: Add New Product Form */}
@@ -516,6 +556,10 @@ export default function AdminDashboardPage() {
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>Item Name *</label>
                   <input required type="text" value={newProdName} onChange={(e) => setNewProdName(e.target.value)} placeholder="e.g. Royal Tourbillon Rose Gold" className="inp" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 600, display: 'block', marginBottom: '0.2rem' }}>SKU <span style={{ color: '#78716c', fontWeight: 400 }}>(optional, unique)</span></label>
+                  <input type="text" value={newProdSku} onChange={(e) => setNewProdSku(e.target.value)} placeholder="e.g. WATCH-001" maxLength={64} className="inp" />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
@@ -543,6 +587,19 @@ export default function AdminDashboardPage() {
                 <button type="submit" className="btn btn-p" style={{ marginTop: '0.5rem' }}>
                   + Add to Catalog
                 </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {variantProduct && activeTab === 'products' && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,.45)', display: 'grid', placeItems: 'center', padding: '1rem' }}>
+            <div style={{ background: '#fff', borderRadius: '1rem', padding: '1.5rem', width: 'min(42rem, 100%)', maxHeight: '90vh', overflow: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><h3 className="font-serif">{variantProduct.name} · Variants</h3><button onClick={() => setVariantProduct(null)}>Close</button></div>
+              {productVariants.map((v) => <div key={v.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center', padding: '.6rem', borderBottom: '1px solid #eee' }}><span style={{ flex: 1 }}>{v.size || 'One size'} · {v.color || 'No color'} · SKU {v.sku} · ৳{formatPrice(v.price)} · {v.stock} in stock{v.stock <= 5 ? ' · LOW' : ''}</span><button onClick={() => editVariant(v)}>Edit</button><button onClick={() => deleteVariant(v.id)} style={{ color: '#b91c1c' }}>Delete</button></div>)}
+              <form onSubmit={saveVariant} style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '.65rem', marginTop: '1rem' }}>
+                {['size', 'color', 'sku', 'price', 'stock'].map((key) => <input key={key} required placeholder={key.toUpperCase()} type={['price', 'stock'].includes(key) ? 'number' : 'text'} value={variantDraft[key]} onChange={(e) => setVariantDraft({ ...variantDraft, [key]: e.target.value })} className="inp" />)}
+                <button className="btn btn-p" type="submit">Add variant</button>
               </form>
             </div>
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../utils/format';
@@ -31,13 +31,28 @@ export default function CartDrawer() {
   const [address, setAddress] = useState('');
   const [method, setMethod] = useState('cod');
   const [errorMsg, setErrorMsg] = useState('');
+  const [deliverySettings, setDeliverySettings] = useState({ free_ship: 3000, ship_dhaka: 60, ship_outside: 120 });
+  const orderRequestKey = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/settings')
+      .then((response) => response.ok ? response.json() : null)
+      .then((settings) => {
+        if (!active || !settings) return;
+        const safe = (value, fallback) => Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : fallback;
+        setDeliverySettings({ free_ship: safe(settings.free_ship, 3000), ship_dhaka: safe(settings.ship_dhaka, 60), ship_outside: safe(settings.ship_outside, 120) });
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   if (!isDrawerOpen) return null;
 
   const hasValidCart = cart.every((item) => Number.isFinite(Number(item?.price)) && Number(item.price) > 0 && Number.isSafeInteger(Number(item?.qty)) && Number(item.qty) > 0);
   const subtotal = hasValidCart ? cart.reduce((sum, item) => sum + Number(item.price) * Number(item.qty), 0) : null;
   const discountAmount = subtotal === null ? 0 : Math.round((subtotal * couponDiscountPercent) / 100);
-  const shippingFee = subtotal === null ? null : subtotal >= 3000 ? 0 : area === 'dhaka' ? 60 : 120;
+  const shippingFee = subtotal === null ? null : subtotal >= deliverySettings.free_ship ? 0 : area === 'dhaka' ? deliverySettings.ship_dhaka : deliverySettings.ship_outside;
   const grandTotal = subtotal === null ? null : Math.max(0, subtotal - discountAmount + shippingFee);
 
   const applySpecificCoupon = async (codeToApply) => {
@@ -77,6 +92,7 @@ export default function CartDrawer() {
     setErrorMsg('');
 
     try {
+      if (!orderRequestKey.current) orderRequestKey.current = window.crypto.randomUUID();
       const payload = {
         name: name.trim(),
         phone: phone.trim(),
@@ -85,7 +101,7 @@ export default function CartDrawer() {
         items: cart.map((item) => ({
           id: item.id,
           qty: item.qty,
-          variant: item.variant,
+          variant_id: item.variant_id || null,
         })),
         coupon: couponAppliedCode || null,
         method,
@@ -93,15 +109,17 @@ export default function CartDrawer() {
 
       const res = await fetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': orderRequestKey.current },
         body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (!res.ok) {
+        if (res.status < 500) orderRequestKey.current = null;
         throw new Error(data.error || 'Failed to place order');
       }
 
+      orderRequestKey.current = null;
       setPlacedOrder({ ...data, phone });
       setStep('success');
       clearCart();
@@ -120,7 +138,7 @@ export default function CartDrawer() {
     setIsDrawerOpen(false);
   };
 
-  const freeShippingThreshold = 3000;
+  const freeShippingThreshold = deliverySettings.free_ship;
   const progressPercent = subtotal === null ? 0 : Math.min(100, Math.round((subtotal / freeShippingThreshold) * 100));
 
   return (
@@ -299,7 +317,7 @@ export default function CartDrawer() {
                       />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: '0.92rem', color: '#1c1917', lineHeight: 1.3 }}>
-                          {item.name}
+                          {item.name}{item.variant ? ` — ${[item.variant.size, item.variant.color].filter(Boolean).join(' / ')}` : ''}
                         </div>
                         <div style={{ fontSize: '0.82rem', color: '#78716c', margin: '0.2rem 0' }}>
                           ৳{formatPrice(item.price)} each
@@ -378,7 +396,7 @@ export default function CartDrawer() {
                         type="text"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
-                        placeholder="Enter coupon (e.g. LUXURY10)"
+                        placeholder="Enter coupon code"
                         className="inp"
                         style={{ textTransform: 'uppercase', padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}
                       />
@@ -390,30 +408,6 @@ export default function CartDrawer() {
                       >
                         {isApplyingCoupon ? '...' : 'Apply'}
                       </button>
-                    </div>
-
-                    {/* 1-Click Quick Coupon Badges */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#78716c' }}>Quick apply:</span>
-                      {['WELCOME10', 'LUXURY10', 'VIP20', 'ELEGANT15'].map((code) => (
-                        <button
-                          key={code}
-                          type="button"
-                          onClick={() => applySpecificCoupon(code)}
-                          style={{
-                            border: '1px dashed #c8a24a',
-                            backgroundColor: couponAppliedCode === code ? '#0f3d2e' : 'rgba(200, 162, 74, 0.1)',
-                            color: couponAppliedCode === code ? '#ffffff' : '#0f3d2e',
-                            borderRadius: '9999px',
-                            padding: '0.2rem 0.55rem',
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ✦ {code}
-                        </button>
-                      ))}
                     </div>
 
                     {couponAppliedCode && (
@@ -498,7 +492,7 @@ export default function CartDrawer() {
                       color: area === 'dhaka' ? '#0f3d2e' : '#44403c',
                     }}
                   >
-                    Inside Dhaka (৳60)
+                    Inside Dhaka (৳{formatPrice(deliverySettings.ship_dhaka)})
                   </button>
                   <button
                     type="button"
@@ -514,7 +508,7 @@ export default function CartDrawer() {
                       color: area === 'outside' ? '#0f3d2e' : '#44403c',
                     }}
                   >
-                    Outside Dhaka (৳120)
+                    Outside Dhaka (৳{formatPrice(deliverySettings.ship_outside)})
                   </button>
                 </div>
               </div>

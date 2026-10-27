@@ -180,8 +180,11 @@ const db = {
       let res;
       try { res = await pgPool.query(toPgSql(sql), params); }
       catch (err) {
-        if (isConnectionFailure(err)) switchToReadOnlyCatalog(err);
-        throw new Error('Persistent database unavailable; all writes are disabled in read-only catalog preview mode.');
+        if (isConnectionFailure(err)) {
+          switchToReadOnlyCatalog(err);
+          throw new Error('Persistent database unavailable; all writes are disabled in read-only catalog preview mode.');
+        }
+        throw err;
       }
       return {
         changes: res.rowCount,

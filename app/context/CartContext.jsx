@@ -60,7 +60,7 @@ export function CartProvider({ children }) {
     if (!product || typeof product !== 'object') return;
     setCart((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.id === product.id && JSON.stringify(item.variant) === JSON.stringify(variant)
+        (item) => item.id === product.id && (item.variant_id || null) === (variant?.id || null)
       );
 
       const rawPrice = product.price_now ?? product.sale_price ?? product.price;
@@ -84,7 +84,8 @@ export function CartProvider({ children }) {
           regularPrice: validRegular,
           image: product.image,
           stock: product.stock != null && Number.isFinite(Number(product.stock)) && Number(product.stock) >= 0 ? Number(product.stock) : null,
-          variant,
+          variant_id: variant?.id || null,
+          variant: variant ? { size: variant.size, color: variant.color, sku: variant.sku } : null,
           qty: safeQty,
         },
       ];
@@ -98,7 +99,7 @@ export function CartProvider({ children }) {
     setCart((prev) =>
       prev
         .map((item) => {
-          if (item.id === id && JSON.stringify(item.variant) === JSON.stringify(variant)) {
+          if (item.id === id && (item.variant_id || null) === (variant?.id || null)) {
             const newQty = item.qty + delta;
             return newQty > 0 ? { ...item, qty: newQty } : null;
           }
@@ -110,7 +111,7 @@ export function CartProvider({ children }) {
 
   const removeFromCart = (id, variant = null) => {
     setCart((prev) =>
-      prev.filter((item) => !(item.id === id && JSON.stringify(item.variant) === JSON.stringify(variant)))
+      prev.filter((item) => !(item.id === id && (item.variant_id || null) === (variant?.id || null)))
     );
     showToast('Item removed from cart');
   };

@@ -31,6 +31,7 @@ async function initSchema() {
 
           CREATE TABLE IF NOT EXISTS products (
             id SERIAL PRIMARY KEY,
+            sku TEXT UNIQUE,
             name TEXT,
             cat_id INTEGER,
             price NUMERIC,
@@ -64,6 +65,32 @@ async function initSchema() {
             created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
           );
 
+          CREATE TABLE IF NOT EXISTS order_idempotency (
+            idempotency_key TEXT PRIMARY KEY,
+            request_hash TEXT NOT NULL,
+            order_id INTEGER NOT NULL UNIQUE,
+            created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS product_variants (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+            size TEXT NOT NULL DEFAULT '',
+            color TEXT NOT NULL DEFAULT '',
+            sku TEXT NOT NULL UNIQUE,
+            price NUMERIC NOT NULL CHECK (price > 0),
+            stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+            active INTEGER NOT NULL DEFAULT 1,
+            created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE INDEX IF NOT EXISTS product_variants_product_id_idx ON product_variants(product_id);
+          CREATE TABLE IF NOT EXISTS order_stock_restorations (
+            order_id INTEGER NOT NULL,
+            line_key TEXT NOT NULL,
+            restored TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY(order_id, line_key)
+          );
+
           CREATE TABLE IF NOT EXISTS coupons (
             code TEXT PRIMARY KEY,
             percent NUMERIC,
@@ -79,6 +106,13 @@ async function initSchema() {
             created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
           );
 
+          CREATE TABLE IF NOT EXISTS review_verifications (
+            review_id INTEGER PRIMARY KEY,
+            product_id INTEGER NOT NULL,
+            order_id INTEGER NOT NULL,
+            UNIQUE(product_id, order_id)
+          );
+
           CREATE TABLE IF NOT EXISTS abandoned (
             phone TEXT PRIMARY KEY,
             items TEXT,
@@ -90,6 +124,20 @@ async function initSchema() {
             v TEXT
           );
         `);
+
+        await db.exec('ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT');
+        await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS products_sku_unique ON products(sku) WHERE sku IS NOT NULL AND sku <> ''");
+        await db.exec(`CREATE TABLE IF NOT EXISTS product_variants (
+          id SERIAL PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+          size TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '', sku TEXT NOT NULL UNIQUE,
+          price NUMERIC NOT NULL CHECK (price > 0), stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+          active INTEGER NOT NULL DEFAULT 1, created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )`);
+        await db.exec('CREATE INDEX IF NOT EXISTS product_variants_product_id_idx ON product_variants(product_id)');
+        await db.exec(`CREATE TABLE IF NOT EXISTS order_stock_restorations (
+          order_id INTEGER NOT NULL, line_key TEXT NOT NULL, restored TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY(order_id, line_key)
+        )`);
 
         // Safe Catalog Seeding (Categories, Products, Coupons, Settings - NO customer or order data)
         const existingCats = await db.get('SELECT COUNT(*) AS count FROM categories');
@@ -177,6 +225,7 @@ async function initSchema() {
 
           CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY,
+            sku TEXT UNIQUE,
             name TEXT,
             cat_id INTEGER,
             price REAL,
@@ -210,6 +259,13 @@ async function initSchema() {
             created TEXT DEFAULT CURRENT_TIMESTAMP
           );
 
+          CREATE TABLE IF NOT EXISTS order_idempotency (
+            idempotency_key TEXT PRIMARY KEY,
+            request_hash TEXT NOT NULL,
+            order_id INTEGER NOT NULL UNIQUE,
+            created TEXT DEFAULT CURRENT_TIMESTAMP
+          );
+
           CREATE TABLE IF NOT EXISTS coupons (
             code TEXT PRIMARY KEY,
             percent REAL,
@@ -225,6 +281,13 @@ async function initSchema() {
             created TEXT DEFAULT CURRENT_TIMESTAMP
           );
 
+          CREATE TABLE IF NOT EXISTS review_verifications (
+            review_id INTEGER PRIMARY KEY,
+            product_id INTEGER NOT NULL,
+            order_id INTEGER NOT NULL,
+            UNIQUE(product_id, order_id)
+          );
+
           CREATE TABLE IF NOT EXISTS abandoned (
             phone TEXT PRIMARY KEY,
             items TEXT,
@@ -236,6 +299,21 @@ async function initSchema() {
             v TEXT
           );
         `);
+
+        try { await db.exec('ALTER TABLE products ADD COLUMN sku TEXT'); }
+        catch (err) { if (!/duplicate column name/i.test(err.message || '')) throw err; }
+        await db.exec("CREATE UNIQUE INDEX IF NOT EXISTS products_sku_unique ON products(sku) WHERE sku IS NOT NULL AND sku <> ''");
+        await db.exec(`CREATE TABLE IF NOT EXISTS product_variants (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+          size TEXT NOT NULL DEFAULT '', color TEXT NOT NULL DEFAULT '', sku TEXT NOT NULL UNIQUE,
+          price REAL NOT NULL CHECK (price > 0), stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+          active INTEGER NOT NULL DEFAULT 1, created TEXT DEFAULT CURRENT_TIMESTAMP
+        )`);
+        await db.exec('CREATE INDEX IF NOT EXISTS product_variants_product_id_idx ON product_variants(product_id)');
+        await db.exec(`CREATE TABLE IF NOT EXISTS order_stock_restorations (
+          order_id INTEGER NOT NULL, line_key TEXT NOT NULL, restored TEXT DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY(order_id, line_key)
+        )`);
 
         // Insert default settings if missing
         for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
@@ -259,16 +337,6 @@ async function initSchema() {
               }
               for (const c of (snapshot.coupons || [])) {
                 await db.run('INSERT OR IGNORE INTO coupons (code, percent, active) VALUES (?, ?, ?)', [c.code, c.percent, c.active]);
-              }
-              // Ensure default coupons
-              const defCoupons = [
-                ['WELCOME10', 10, 1],
-                ['LUXURY10', 10, 1],
-                ['VIP20', 20, 1],
-                ['ELEGANT15', 15, 1],
-              ];
-              for (const [code, pct, act] of defCoupons) {
-                await db.run('INSERT OR IGNORE INTO coupons (code, percent, active) VALUES (?, ?, ?)', [code, pct, act]);
               }
             }
           } catch (seedErr) {

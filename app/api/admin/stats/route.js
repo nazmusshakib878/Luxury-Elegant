@@ -11,7 +11,7 @@ export async function GET(request) {
       db.get("SELECT COALESCE(SUM(total), 0) AS total_revenue FROM orders WHERE status != 'cancelled'"),
       db.get('SELECT COUNT(*) AS total_orders FROM orders'),
       db.get('SELECT COUNT(*) AS total_products FROM products WHERE active = 1'),
-      db.all('SELECT id, name, stock FROM products WHERE active = 1 AND stock <= 5 ORDER BY stock ASC LIMIT 10'),
+      db.all("SELECT 'product' AS type, id, name, stock FROM products WHERE active = 1 AND stock <= 5 UNION ALL SELECT 'variant' AS type, v.id, p.name || ' (' || COALESCE(v.size, '') || ' ' || COALESCE(v.color, '') || ')' AS name, v.stock FROM product_variants v INNER JOIN products p ON p.id = v.product_id WHERE v.active = 1 AND v.stock <= 5 ORDER BY stock ASC LIMIT 20"),
       db.all('SELECT id, name, phone, total, status, created FROM orders ORDER BY id DESC LIMIT 8'),
     ]);
 
@@ -20,6 +20,7 @@ export async function GET(request) {
       orders: +(ordersCountRow?.total_orders || 0),
       products: +(productsCountRow?.total_products || 0),
       lowStock: lowStockRow || [],
+      low: lowStockRow || [],
       recentOrders: recentOrders || [],
     });
   } catch (err) {
